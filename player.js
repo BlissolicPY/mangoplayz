@@ -327,8 +327,15 @@
   function hideWidget(why) {
     stopTicking();
     el.root.hidden = true;
-    // never leave a full-screen gate over a page with no player behind it
-    if (el.gate) el.gate.hidden = true;
+    /* Deliberately does NOT touch the gate any more.
+
+       It used to hide it too, reasoning that a dead player shouldn't leave a
+       full-screen overlay stranded. That was wrong twice over: the gate is
+       dismissed by the inline <head> script on the first interaction no matter
+       what the player is doing, so it was never strandable — and hiding it
+       here removed the ONLY visible thing on the page while `html.gated` was
+       still holding the content invisible. A blocked YouTube API (any
+       adblocker) therefore rendered a near-empty page with nothing to click. */
     if (why) console.warn("[player] hidden:", why);
   }
 

@@ -28,8 +28,38 @@ fallback), 5 tiles, no horizontal overflow.
 - `index.html` — the whole page. 5 tiles: the three channels, Discord, X. No email tile (he
   publishes none), so unlike the sibling sites there is no toast and no clipboard code.
 - `main.js` — live sub-count fetch + `abbreviate()` (integer-domain floor, the fixed version).
+- `player.js` — the "now playing" widget (background music).
 - `style.css` — palette custom properties.
 - `assets/pfp.jpg` — NathanMC's 900x900 avatar, the palette source.
+
+## Background music / "now playing"
+
+Track: **SoFaygo — 2 FAR**, video `bzZNZO-fnU0` (2:02). Starts on the visitor's first
+click/tap/keypress anywhere on the page, at 22% volume with a 1.6s fade-in, and loops.
+
+- **The audio is not hosted here and must not be.** `player.js` drives the official YouTube
+  IFrame player parked offscreen in `.yt-host`; our card is just a skin over its API. Ripping the
+  audio and self-hosting would be redistributing someone else's master, and a DMCA would take the
+  page's music out with it. This way the upload keeps its play count and there is nothing to
+  take down.
+- **The upload is a re-upload channel** (`@unvaulted1`), not the artist or label — the single most
+  likely way this breaks is that video going away. `onError` (100/101/150) hides the whole widget
+  rather than leaving dead controls on the page, and an 8s watchdog does the same if the API is
+  blocked by an extension. If it dies, swap `VIDEO_ID` for an official upload.
+- **"Stabilise the volume" is done by starting quiet and ramping, not by processing.** A
+  cross-origin iframe gives no access to the audio stream, so there is no Web Audio compressor or
+  gain node to hang off it. YouTube already loudness-normalises server-side; the rest is
+  `VOLUME_DEFAULT = 22` plus the fade so it never punches in.
+- **Autoplay policy is respected, not fought.** Browsers refuse audio without a user gesture, so
+  the first interaction anywhere arms playback — which is also exactly the requested "plays when
+  someone clicks on the site". A deliberate pause is remembered (`mp:auto = off`), so a visitor
+  who turns it off isn't ambushed on their next visit. Volume and mute persist too.
+- **`youtube-nocookie.com` is the player host**, so no tracking cookie is set unless it actually
+  plays.
+- **Known limitation: iOS ignores `setVolume`.** The slider will move and persist but iOS routes
+  volume to the hardware buttons only. Mute/pause still work.
+- The offscreen host is a real 320x180 element pushed to `left:-10000px` rather than
+  `display:none` or 0x0 — some browsers won't start playback in a collapsed frame.
 
 ## Decisions & Rationale
 

@@ -57,29 +57,38 @@ click/tap/keypress anywhere on the page, at 22% volume with a 1.6s fade-in, and 
   10 → 1, 28 → 6, 50 → 22, 100 → 100. **`VOLUME_DEFAULT = 28` is a slider position, not an
   amplitude** — it lands on amplitude 6, about -24 dB, after 22 (-13 dB) was still too hot at a
   system volume of 34. To make the whole site quieter, change that one constant.
-- **Autoplay: try audible, fall back to muted, and gate only when refused.** Audible autoplay is
+- **The intro gate is the autoplay solution, and it is shown to everyone.** Audible autoplay is
   blocked everywhere until the visitor has history with the site — Chrome gates it on a per-origin
-  **Media Engagement Index**, so regulars get sound instantly and first-timers don't. That, not any
-  trick, is why other sites appear to autoplay: the person testing had been there before. Order of
-  operations in `autostart()`:
-  1. `navigator.getAutoplayPolicy("mediaelement")` if the browser has it (Chrome 121+) — a
-     straight verdict, no guessing and no delay.
-  2. Otherwise call `playVideo()` unmuted, wait 900ms and read `getPlayerState()`. A refusal
-     produces no event; the state simply never reaches PLAYING.
-  3. If refused, `silentStart()` plays it **muted** (always permitted) and shows the `#gate`
-     overlay. The first click/tap/key anywhere unmutes it **mid-song** rather than restarting.
+  **Media Engagement Index**, so regulars get sound and first-timers don't. That, not any trick, is
+  why other sites appear to autoplay: whoever was testing had been there before. Rather than fight
+  a policy that can't be beaten, `#gate` turns the required gesture into the page's entrance: one
+  click anywhere, and from that point audible playback cannot be refused by any browser.
+
+  Earlier builds probed the policy (`getAutoplayPolicy()`, then a 900ms `getPlayerState()` check)
+  and only gated when refused. That's gone — with a guaranteed gesture there is nothing to detect,
+  so `player.js` has no probe, no muted fallback and no `data-blocked` state.
 
   Things that do **not** work and shouldn't be re-attempted: silent priming clips, Web Audio (its
   context starts suspended), unmuting without a gesture (Chrome pauses the media), and
   `mousemove`/`scroll` (neither is user activation).
 
-  A deliberate pause is still remembered (`mp2:auto = off`), as are volume and mute. Someone who
-  muted last visit gets silence rather than a prompt for sound.
+- **Gate dismissal is inline in `<head>`, deliberately not in `player.js`.** Two reasons: `gated`
+  must be on `<html>` before first paint or the staggered reveal runs behind the overlay and the
+  page is already finished when the visitor clicks through; and if `player.js` or the YouTube API
+  is blocked by an extension, the intro must still clear. **A gate that can trap the page is a
+  broken page.** The inline script removes `gated`, fades `#gate` out and fires `mp:enter`;
+  `player.js` merely listens (and buffers `pendingEnter` if the API hasn't finished loading).
 
-- **The gate is only rendered when autoplay was actually refused.** Trusted visitors never see it
-  — verified: on the allowed path `#gate` stays `hidden` with no flash. It also hides itself in
-  `hideWidget()`, so a dead API can never leave a full-screen overlay on a page with no player
-  behind it.
+- **The track pre-buffers muted behind the gate, then seeks to 0 on entry** — so the click is
+  followed by music, not by loading, and the song starts with the page rather than mid-way.
+  Verified: 0:14 while buffering, 0:05 immediately after entry.
+
+- **`html.gated [data-reveal] { animation-play-state: paused }`** holds the entrance. Pausing (not
+  delaying) is what makes it work, because a paused animation also stops its `animation-delay`
+  clock — so removing the class replays the whole stagger from the top.
+
+- A deliberate pause or mute is still remembered (`mp2:auto`, `mp2:muted`): those visitors pass
+  through the gate into silence rather than being re-started.
 - **Storage namespace is `mp2:`.** The old `mp:` keys held amplitudes on the pre-curve scale and a
   pause flag from before autoplay existed, so they are deliberately not inherited — everyone gets
   the new quiet default once.

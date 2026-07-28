@@ -684,14 +684,6 @@ body {
 .player[data-playing="true"] .player__eq i { opacity: 1; }
 .player[data-playing="false"] .player__eq i { animation-play-state: paused; }
 
-/* set when the browser refused audible autoplay: the track is already running,
-   silently, and the first click will bring the sound in */
-.player[data-blocked="true"] .player__label {
-  color: var(--gold-400);
-  opacity: 0.95;
-}
-
-.player[data-blocked="true"] .player__eq i { opacity: 0.45; }
 
 @keyframes eq {
   from { height: 25%; }
@@ -851,10 +843,18 @@ body {
 }
 
 /* ==========================================================================
-   Sound gate — the one click browsers insist on, made to look deliberate.
-   Only rendered when audible autoplay was actually refused; visitors whose
-   browser already trusts this domain never see it.
+   Intro gate — the one click browsers insist on, turned into the entrance.
+
+   Every visitor gets it, because that click is the only thing that guarantees
+   audible playback: after a real gesture no browser can refuse. It also holds
+   the staggered reveal below, so the page plays its entrance AS the overlay
+   dissolves rather than having quietly finished behind it.
    ========================================================================== */
+
+/* the reveal is paused, not delayed — pausing stops the delay clock too, so
+   removing .gated replays the whole stagger from the top */
+html.gated [data-reveal] { animation-play-state: paused; }
+html.gated body { overflow: hidden; }
 
 .gate {
   position: fixed;
@@ -875,7 +875,7 @@ body {
 
 /* set by player.js just before removal, so it dissolves instead of vanishing */
 .gate.is-leaving {
-  animation: gate-out 0.5s var(--ease) forwards;
+  animation: gate-out 0.6s var(--ease) forwards;
   pointer-events: none;
 }
 

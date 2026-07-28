@@ -32,6 +32,42 @@
 <link rel="preload" as="image" href="assets/pfp.jpg">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+
+<script>
+/* The intro gate lives here, inline and ahead of everything, for two reasons.
+
+   1. `gated` has to be on <html> before first paint or the staggered reveal
+      would run behind the overlay and the page would be sitting there finished
+      when the visitor clicks through.
+   2. Dismissal must not depend on player.js or the YouTube API. If either is
+      blocked by an extension, the intro still clears and the site works — it
+      just does so in silence. A gate that can trap the page is a broken page.
+
+   The click here is also what makes the music legal to start: it is a real user
+   gesture, so no browser can refuse audible playback afterwards. player.js
+   listens for the `mp:enter` event this fires. */
+(function () {
+  var root = document.documentElement;
+  root.classList.add("gated");
+
+  var EVENTS = ["pointerdown", "touchstart", "keydown"];
+
+  function enter() {
+    EVENTS.forEach(function (t) { window.removeEventListener(t, enter, true); });
+    root.classList.remove("gated");
+
+    var gate = document.getElementById("gate");
+    if (gate) {
+      gate.classList.add("is-leaving");
+      setTimeout(function () { gate.hidden = true; }, 620);
+    }
+
+    window.dispatchEvent(new CustomEvent("mp:enter"));
+  }
+
+  EVENTS.forEach(function (t) { window.addEventListener(t, enter, { capture: true, once: true }); });
+})();
+</script>
 </head>
 <body>
 
@@ -206,9 +242,9 @@
 
 </main>
 
-<!-- Shown ONLY when the browser refused audible autoplay. Anyone Chrome already
-     trusts with this domain never sees it — the music simply starts. -->
-<div class="gate" id="gate" hidden>
+<!-- The intro. Shown to everyone: the click is what buys guaranteed audio, and
+     it doubles as the page's entrance. Dismissed by the inline script in <head>. -->
+<div class="gate" id="gate" role="button" tabindex="0" aria-label="Click anywhere to enter">
   <div class="gate__inner">
     <span class="gate__art">
       <img src="assets/pfp.jpg" alt="" width="86" height="86" draggable="false">
@@ -216,7 +252,7 @@
     </span>
     <span class="gate__eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
     <p class="gate__title">MangoPlayz</p>
-    <p class="gate__hint">Click anywhere for sound</p>
+    <p class="gate__hint">Click anywhere to enter</p>
   </div>
 </div>
 

@@ -279,82 +279,48 @@
      in sync, and the first click/tap/key unmutes it mid-song rather than
      starting it from the top. */
 
-  const GESTURES = ["pointerdown", "touchstart", "keydown"];
+  /* ---------- start ----------
+     The intro gate in index.html guarantees a real user gesture before this
+     runs, so there is no autoplay policy left to fight: no probing, no muted
+     fallback, no getAutoplayPolicy() check. Audible playback after a click is
+     simply allowed everywhere.
 
-  /* Chrome 121+ will just tell you the verdict, which avoids the probe below
-     and the ~1s of uncertainty that comes with it. Everywhere else, null. */
-  function declaredPolicy() {
-    try {
-      if (typeof navigator.getAutoplayPolicy === "function") {
-        return navigator.getAutoplayPolicy("mediaelement"); // allowed | allowed-muted | disallowed
-      }
-    } catch {
-      /* fall through to probing */
-    }
-    return null;
+     The track is buffered muted while the gate is up so that the click is
+     followed by sound, not by loading. */
+
+  let entered = false;
+  let pendingEnter = false; // gate clicked before the API finished loading
+
+  function prebuffer() {
+    if (!ready || entered) return;
+    player.mute();
+    player.playVideo();
   }
 
-  function markBlocked(on) {
-    el.root.dataset.blocked = String(on);
-    if (el.label) el.label.textContent = on ? "Click for sound" : "Now playing";
-    if (!el.gate) return;
+  function enter() {
+    if (!ready || entered) return;
+    entered = true;
 
-    if (on) {
-      el.gate.hidden = false;
-    } else if (!el.gate.hidden) {
-      el.gate.classList.add("is-leaving");
-      setTimeout(() => {
-        el.gate.hidden = true;
-        el.gate.classList.remove("is-leaving");
-      }, 500);
+    // someone who paused or muted on a previous visit keeps their silence
+    if (store.get("auto", "on") === "off") {
+      player.pauseVideo();
+      return;
     }
-  }
-
-  function autostart() {
-    if (!ready || store.get("auto", "on") === "off") return;
-
-    // someone who muted it last visit gets silence, not a prompt for sound
     if (muted) {
-      player.mute();
-      player.playVideo();
+      applyVolume();
       return;
     }
 
-    const verdict = declaredPolicy();
-    if (verdict === "allowed-muted" || verdict === "disallowed") return silentStart();
-
-    player.unMute();
-    player.setVolume(0);
+    player.seekTo(0, true); // the song starts when the site does
     player.playVideo();
-
-    if (verdict === "allowed") return fadeIn();
-
-    // no verdict available: probe. If the browser refused, playVideo() simply
-    // never reaches PLAYING, and there is no event to tell us so.
-    setTimeout(() => {
-      const s = player.getPlayerState();
-      if (s === YT.PlayerState.PLAYING || s === YT.PlayerState.BUFFERING) fadeIn();
-      else silentStart();
-    }, 900);
+    fadeIn();
   }
 
-  /* Muted playback is permitted unconditionally, so the track starts anyway and
-     runs silently behind the gate. The first click unmutes it MID-SONG rather
-     than starting it over — which is the whole point of doing it this way. */
-  function silentStart() {
-    player.mute();
-    player.playVideo();
-    markBlocked(true);
-
-    const kick = () => {
-      GESTURES.forEach((t) => window.removeEventListener(t, kick, true));
-      markBlocked(false);
-      if (player.getPlayerState() !== YT.PlayerState.PLAYING) player.playVideo();
-      fadeIn();
-    };
-
-    GESTURES.forEach((t) => window.addEventListener(t, kick, { capture: true, once: true }));
-  }
+  // fires whether or not this file loaded in time — the gate is independent
+  window.addEventListener("mp:enter", () => {
+    if (ready) enter();
+    else pendingEnter = true;
+  });
 
   /* ---------- YouTube API ---------- */
 
@@ -387,7 +353,8 @@
           applyVolume();
           paintProgress(0);
           startTicking();
-          autostart();
+          if (pendingEnter) enter();
+          else prebuffer();
         },
         onStateChange: (e) => {
           const S = YT.PlayerState;

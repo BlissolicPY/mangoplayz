@@ -36,6 +36,45 @@
   // renders what the channel page shows
   const FALLBACK = 101_000;
 
+  /* Per-tile counts. All were verified CORS-open FROM THE PAGE ITSELF, not from
+     a terminal — Discord returns no Access-Control-Allow-Origin header unless
+     the request carries an Origin, so a curl/PowerShell probe reports a false
+     negative on it. Re-test in a browser before ever concluding one died.
+
+     mixerno returns some counts as STRINGS ("1291"), so every reader goes
+     through Number() before the isFinite guard, which would otherwise silently
+     drop them. */
+  const TILE_COUNTS = [
+    {
+      el: "cMangoYT",
+      label: "subscribers",
+      fallback: 7_430,
+      url: "https://api.socialcounts.org/youtube-live-subscriber-count/UCkEZ7Z3PuvLEvr8x5ibBf-w",
+      read: (d) => [d?.counters?.estimation?.subscriberCount, d?.counters?.api?.subscriberCount],
+    },
+    {
+      el: "cMangoMods",
+      label: "subscribers",
+      fallback: 610,
+      url: "https://api.socialcounts.org/youtube-live-subscriber-count/UCbIzhX2gzTRxuIX-qEK9r5Q",
+      read: (d) => [d?.counters?.estimation?.subscriberCount, d?.counters?.api?.subscriberCount],
+    },
+    {
+      el: "cDiscord",
+      label: "members",
+      fallback: 399,
+      url: "https://discord.com/api/v10/invites/GxqW9vmbAK?with_counts=true",
+      read: (d) => [d?.approximate_member_count],
+    },
+    {
+      el: "cX",
+      label: "followers",
+      fallback: 1_291,
+      url: "https://mixerno.space/api/twitter-user-counter/user/MangoPlayzz",
+      read: (d) => [d?.counts?.find((c) => c.value === "followers")?.count],
+    },
+  ];
+
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* Matches YouTube's own abbreviation: 3 significant figures, TRUNCATED.
@@ -65,6 +104,14 @@
     return String(n);
   }
 
+  /* The tiles want a different format from the hero pill. Abbreviating below
+     10K produces things like "1.29K" for 1,291, which reads worse than the real
+     number — so anything under 10,000 is printed in full with thousands
+     separators and only larger counts get the K/M treatment. */
+  function formatCount(n) {
+    return n < 10_000 ? n.toLocaleString("en-GB") : abbreviate(n);
+  }
+
   const countEl = document.getElementById("subCount");
 
   let shown = 0;      // value currently painted
@@ -76,7 +123,8 @@
       try {
         const res = await fetch(src.url, { cache: "no-store" });
         if (!res.ok) continue;
-        for (const n of src.read(await res.json())) {
+        for (const raw of src.read(await res.json())) {
+          const n = Number(raw);
           if (Number.isFinite(n) && n > 0) return n;
         }
       } catch {
@@ -84,6 +132,56 @@
       }
     }
     return null;
+  }
+
+  /* ---------- per-tile counts ---------- */
+
+  const tileShown = new Map();
+
+  async function readOne(src) {
+    try {
+      const res = await fetch(src.url, { cache: "no-store" });
+      if (!res.ok) return null;
+      for (const raw of src.read(await res.json())) {
+        const n = Number(raw);
+        if (Number.isFinite(n) && n > 0) return n;
+      }
+    } catch {
+      /* dead source — handled by the caller */
+    }
+    return null;
+  }
+
+  function paintTile(el, src, n, first) {
+    el.textContent = formatCount(n);
+    el.dataset.state = "live";
+    el.setAttribute("aria-label", `${formatCount(n)} ${src.label}`);
+
+    if (!first && !reduceMotion && tileShown.get(src.el) !== n) {
+      el.classList.remove("is-bump");
+      void el.offsetWidth; // restart the animation
+      el.classList.add("is-bump");
+    }
+    tileShown.set(src.el, n);
+  }
+
+  async function refreshTiles(first = false) {
+    await Promise.all(
+      TILE_COUNTS.map(async (src) => {
+        const el = document.getElementById(src.el);
+        if (!el) return;
+
+        const n = (await readOne(src)) ?? (first ? src.fallback : null);
+        // a source that rots mid-session leaves the last good number alone; one
+        // that is already dead on arrival hides its slot entirely rather than
+        // sitting on an em dash forever
+        if (n === null) {
+          if (first) el.dataset.state = "dead";
+          return;
+        }
+        paintTile(el, src, n, first);
+      })
+    );
   }
 
   const easeOutExpo = (t) => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t));
@@ -121,12 +219,21 @@
   }
 
   async function refresh(first = false) {
+    // the tiles ride the same timer rather than running their own
+    refreshTiles(first);
+
     const n = (await fetchCount()) ?? (first ? FALLBACK : null);
     if (n === null || n === shown) return;
 
     countEl.dataset.state = "live";
     animateTo(n, first ? 1800 : 900);
     if (!first) bump();
+
+    // the NathanMC tile reuses the pill's number instead of fetching again
+    const mainTile = document.getElementById("cNathan");
+    if (mainTile) {
+      paintTile(mainTile, { el: "cNathan", label: "subscribers" }, n, first);
+    }
   }
 
   function startPolling() {

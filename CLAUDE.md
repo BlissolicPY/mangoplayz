@@ -32,6 +32,32 @@ fallback), 5 tiles, no horizontal overflow.
 - `style.css` — palette custom properties.
 - `assets/pfp.jpg` — NathanMC's 900x900 avatar, the palette source.
 
+## Per-tile counts, cursor trail, one-screen layout (added 2026-07-28)
+
+- **Live counts on every tile.** NathanMC reuses the hero pill's number rather than fetching
+  again, so the two can never disagree. The rest: socialcounts for the two secondary channels,
+  Discord's invite API (`approximate_member_count`), and mixerno's `twitter-user-counter` for
+  `@MangoPlayzz` (identity confirmed via `user.name`, not assumed from the handle).
+  - **Test CORS from the page, never from a terminal.** Discord sends no
+    `Access-Control-Allow-Origin` to a PowerShell probe because that request carries no `Origin` —
+    it looks dead and isn't.
+  - **mixerno returns counts as strings**, which the `Number.isFinite` guard silently dropped, so
+    every reader now goes through `Number()` first.
+  - **Under 10,000 prints in full with separators** (`7,430`, `399`); only larger counts abbreviate.
+    Abbreviating small numbers gives "1.29K" for 1,291, which reads worse than the real figure.
+
+- **The player is fixed to the top-left on screens ≥64rem**, and drops back into the flow below
+  that (a fixed panel would cover the hero on a phone). **That media query must sit AFTER the base
+  `.player` rule** — same specificity means source order wins, and in front of it the base
+  `width: 100%` won and the panel spanned the whole viewport.
+
+- **The page is meant to fit without scrolling**, so two height-based media queries tighten spacing
+  only — nothing changes size or colour. Verified fitting at 1440x900 and 1366x700.
+
+- **`cursor.js`** is the same speed-stretched glow as the Blissolic site, re-tinted gold. Native
+  cursor stays visible on purpose; see that project's CLAUDE.md for the reasoning and the caveat
+  that headless Chromium throttles rAF so the motion can only be judged in a real browser.
+
 ## Background music / "now playing"
 
 Track: **SoFaygo — 2 FAR**, video `bzZNZO-fnU0` (2:02). Starts on the visitor's first

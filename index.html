@@ -31,7 +31,9 @@
 <link rel="preconnect" href="https://api.socialcounts.org" crossorigin>
 <link rel="preload" as="image" href="assets/pfp.jpg">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<!-- ?v= bumped whenever style.css changes: browsers hold the old stylesheet
+     otherwise and a redesign silently doesn't appear -->
+<link rel="stylesheet" href="style.css?v=2">
 
 <script>
 /* The intro gate lives here, inline and ahead of everything, for two reasons.
@@ -117,6 +119,7 @@
         <span class="tile__sub">@NathanMCShorts</span>
       </span>
       <span class="tile__badge">Main</span>
+      <span class="tile__count" id="cNathan" data-state="loading">&mdash;</span>
       <span class="tile__arrow" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </span>
@@ -132,6 +135,7 @@
         <span class="tile__title">MangoPlayz</span>
         <span class="tile__sub">@MangoPlayzYT</span>
       </span>
+      <span class="tile__count" id="cMangoYT" data-state="loading">&mdash;</span>
       <span class="tile__arrow" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </span>
@@ -147,6 +151,7 @@
         <span class="tile__title">MangoMods</span>
         <span class="tile__sub">@MangoModsMC &middot; mod guides</span>
       </span>
+      <span class="tile__count" id="cMangoMods" data-state="loading">&mdash;</span>
       <span class="tile__arrow" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </span>
@@ -162,6 +167,7 @@
         <span class="tile__title">Discord</span>
         <span class="tile__sub">Mango's Fruit Bowl</span>
       </span>
+      <span class="tile__count" id="cDiscord" data-state="loading">&mdash;</span>
       <span class="tile__arrow" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </span>
@@ -177,6 +183,7 @@
         <span class="tile__title">X</span>
         <span class="tile__sub">@MangoPlayzz</span>
       </span>
+      <span class="tile__count" id="cX" data-state="loading">&mdash;</span>
       <span class="tile__arrow" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </span>
@@ -259,7 +266,8 @@
 
 <div class="yt-host" id="ytHost" aria-hidden="true"></div>
 
-<script src="main.js"></script>
-<script src="player.js"></script>
+<script src="main.js?v=2"></script>
+<script src="player.js?v=2"></script>
+<script src="cursor.js?v=2"></script>
 </body>
 </html>

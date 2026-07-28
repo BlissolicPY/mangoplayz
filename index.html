@@ -206,6 +206,20 @@
 
 </main>
 
+<!-- Shown ONLY when the browser refused audible autoplay. Anyone Chrome already
+     trusts with this domain never sees it — the music simply starts. -->
+<div class="gate" id="gate" hidden>
+  <div class="gate__inner">
+    <span class="gate__art">
+      <img src="assets/pfp.jpg" alt="" width="86" height="86" draggable="false">
+      <span class="gate__ring" aria-hidden="true"></span>
+    </span>
+    <span class="gate__eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+    <p class="gate__title">MangoPlayz</p>
+    <p class="gate__hint">Click anywhere for sound</p>
+  </div>
+</div>
+
 <div class="yt-host" id="ytHost" aria-hidden="true"></div>
 
 <script src="main.js"></script>

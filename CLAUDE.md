@@ -57,13 +57,29 @@ click/tap/keypress anywhere on the page, at 22% volume with a 1.6s fade-in, and 
   10 → 1, 28 → 6, 50 → 22, 100 → 100. **`VOLUME_DEFAULT = 28` is a slider position, not an
   amplitude** — it lands on amplitude 6, about -24 dB, after 22 (-13 dB) was still too hot at a
   system volume of 34. To make the whole site quieter, change that one constant.
-- **Autoplay: try audible, fall back to muted.** Audible autoplay is blocked everywhere until the
-  visitor has history with the site (Chrome gates it on its Media Engagement Index, so regulars do
-  get sound instantly and first-timers don't). `autostart()` calls `playVideo()`, waits 900ms and
-  checks `getPlayerState()`; if the browser refused, `silentStart()` plays it **muted** — always
-  permitted — and the first click/tap/key unmutes mid-song rather than restarting it. While in
-  that state the card's label reads "Click for sound" in gold (`[data-blocked="true"]`).
-  A deliberate pause is still remembered (`mp2:auto = off`), as do volume and mute.
+- **Autoplay: try audible, fall back to muted, and gate only when refused.** Audible autoplay is
+  blocked everywhere until the visitor has history with the site — Chrome gates it on a per-origin
+  **Media Engagement Index**, so regulars get sound instantly and first-timers don't. That, not any
+  trick, is why other sites appear to autoplay: the person testing had been there before. Order of
+  operations in `autostart()`:
+  1. `navigator.getAutoplayPolicy("mediaelement")` if the browser has it (Chrome 121+) — a
+     straight verdict, no guessing and no delay.
+  2. Otherwise call `playVideo()` unmuted, wait 900ms and read `getPlayerState()`. A refusal
+     produces no event; the state simply never reaches PLAYING.
+  3. If refused, `silentStart()` plays it **muted** (always permitted) and shows the `#gate`
+     overlay. The first click/tap/key anywhere unmutes it **mid-song** rather than restarting.
+
+  Things that do **not** work and shouldn't be re-attempted: silent priming clips, Web Audio (its
+  context starts suspended), unmuting without a gesture (Chrome pauses the media), and
+  `mousemove`/`scroll` (neither is user activation).
+
+  A deliberate pause is still remembered (`mp2:auto = off`), as are volume and mute. Someone who
+  muted last visit gets silence rather than a prompt for sound.
+
+- **The gate is only rendered when autoplay was actually refused.** Trusted visitors never see it
+  — verified: on the allowed path `#gate` stays `hidden` with no flash. It also hides itself in
+  `hideWidget()`, so a dead API can never leave a full-screen overlay on a page with no player
+  behind it.
 - **Storage namespace is `mp2:`.** The old `mp:` keys held amplitudes on the pre-curve scale and a
   pause flag from before autoplay existed, so they are deliberately not inherited — everyone gets
   the new quiet default once.

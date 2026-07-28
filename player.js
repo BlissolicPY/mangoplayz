@@ -45,6 +45,7 @@
     vol:   document.getElementById("vol"),
     mute:  document.getElementById("muteBtn"),
     label: document.getElementById("npLabel"),
+    gate:  document.getElementById("gate"),
   };
 
   if (!el.root || !el.host) return;
@@ -280,19 +281,56 @@
 
   const GESTURES = ["pointerdown", "touchstart", "keydown"];
 
+  /* Chrome 121+ will just tell you the verdict, which avoids the probe below
+     and the ~1s of uncertainty that comes with it. Everywhere else, null. */
+  function declaredPolicy() {
+    try {
+      if (typeof navigator.getAutoplayPolicy === "function") {
+        return navigator.getAutoplayPolicy("mediaelement"); // allowed | allowed-muted | disallowed
+      }
+    } catch {
+      /* fall through to probing */
+    }
+    return null;
+  }
+
   function markBlocked(on) {
     el.root.dataset.blocked = String(on);
     if (el.label) el.label.textContent = on ? "Click for sound" : "Now playing";
+    if (!el.gate) return;
+
+    if (on) {
+      el.gate.hidden = false;
+    } else if (!el.gate.hidden) {
+      el.gate.classList.add("is-leaving");
+      setTimeout(() => {
+        el.gate.hidden = true;
+        el.gate.classList.remove("is-leaving");
+      }, 500);
+    }
   }
 
   function autostart() {
     if (!ready || store.get("auto", "on") === "off") return;
 
+    // someone who muted it last visit gets silence, not a prompt for sound
+    if (muted) {
+      player.mute();
+      player.playVideo();
+      return;
+    }
+
+    const verdict = declaredPolicy();
+    if (verdict === "allowed-muted" || verdict === "disallowed") return silentStart();
+
     player.unMute();
     player.setVolume(0);
     player.playVideo();
 
-    // the policy verdict isn't synchronous — check whether it actually ran
+    if (verdict === "allowed") return fadeIn();
+
+    // no verdict available: probe. If the browser refused, playVideo() simply
+    // never reaches PLAYING, and there is no event to tell us so.
     setTimeout(() => {
       const s = player.getPlayerState();
       if (s === YT.PlayerState.PLAYING || s === YT.PlayerState.BUFFERING) fadeIn();
@@ -300,6 +338,9 @@
     }, 900);
   }
 
+  /* Muted playback is permitted unconditionally, so the track starts anyway and
+     runs silently behind the gate. The first click unmutes it MID-SONG rather
+     than starting it over — which is the whole point of doing it this way. */
   function silentStart() {
     player.mute();
     player.playVideo();
@@ -309,7 +350,7 @@
       GESTURES.forEach((t) => window.removeEventListener(t, kick, true));
       markBlocked(false);
       if (player.getPlayerState() !== YT.PlayerState.PLAYING) player.playVideo();
-      fadeIn(); // no-op'd into a plain applyVolume() if they'd muted it before
+      fadeIn();
     };
 
     GESTURES.forEach((t) => window.addEventListener(t, kick, { capture: true, once: true }));
@@ -320,6 +361,8 @@
   function hideWidget(why) {
     stopTicking();
     el.root.hidden = true;
+    // never leave a full-screen gate over a page with no player behind it
+    if (el.gate) el.gate.hidden = true;
     if (why) console.warn("[player] hidden:", why);
   }
 

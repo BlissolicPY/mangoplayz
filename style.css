@@ -1,0 +1,602 @@
+/* ==========================================================================
+   MangoPlayz
+   Palette sampled directly from the main channel's avatar (@NathanMCShorts):
+   a tropical sunset — gold hoodie and hair, purple-magenta sky, palm green.
+
+   Unlike the Dewier site, this source is genuinely multi-hue: 61.5% of its
+   chromatic pixels are amber/gold (H20-59), 9.3% palm green (H130-179) and
+   7.4% sunset mauve (H290-339). So the ambient can hold two different hues at
+   once — amber and sky-plum — and the mauve is a real spice, not a lift.
+   ========================================================================== */
+
+:root {
+  /* sampled from assets/pfp.jpg — % is that bucket's share of the circle */
+  /* The one colour here that is NOT straight off the avatar. This is a bright
+     cartoon: its darkest well-represented bucket is #2D1B19 at L14, and using
+     that as the page floor left the render at mean luma 51.8 against 33-40 for
+     the sibling sites — the family's depth was gone. So the floor is that exact
+     bucket taken down to L7: same hue and saturation, half the lightness. */
+  --void-950:   #160D0C; /* #2D1B19 (0.52%, L14) darkened to L7 */
+  --clay-950:   #2D1B19; /* 0.52% — the sampled original */
+  --bark-900:   #321D1A; /* 1.61% */
+  --cocoa-800:  #38231A; /* 2.49% */
+  --abyss-900:  #032C2B; /* 0.31% — H179, the palm/water shadow: a cool floor */
+  --amber-700:  #A6570A; /* 1.52% — S89 L35, the one saturated mid-dark */
+  --amber-600:  #D57918; /* 1.33% */
+  --gold-500:   #FDC735; /* 3.26% — the single most common bucket */
+  --gold-400:   #FED639; /* 1.68% */
+  --yellow-300: #FEFB05; /* 2.37% — the hair highlight */
+  --cream-100:  #FEFCD9; /* 1.64% */
+  --plum-600:   #653C68; /* 0.57% — the deep end of the sunset sky */
+  --mauve-400:  #B66693; /* 0.98% — the sky itself; the spice */
+  --leaf-400:   #08D736; /* 0.52% — the palms */
+  --white:      #FDFEF9; /* 1.55% */
+
+  --text:       var(--white);
+  --text-dim:   rgba(253, 254, 249, 0.58);
+  --text-faint: rgba(253, 254, 249, 0.34);
+
+  /* 0.05 / 0.10 rather than the 0.035 / 0.08 the first two sites use: warm
+     backgrounds read closer than their luminance says, so tiles need the lift
+     to stay separate. Measured on the Dewier build — see that CLAUDE.md. */
+  --tile-bg:        rgba(255, 255, 255, 0.05);
+  --tile-bg-hover:  rgba(255, 255, 255, 0.085);
+  --tile-border:    rgba(255, 255, 255, 0.10);
+
+  /* per-tile brand accent, overridden by [data-brand] */
+  --brand: var(--gold-500);
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: clamp(1.5rem, 5vw, 3rem) 1.25rem;
+  background: var(--void-950);
+  color: var(--text);
+  font-family: "Outfit", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-synthesis-weight: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+::selection { background: var(--gold-500); color: var(--void-950); }
+
+:focus-visible {
+  outline: 2px solid var(--gold-400);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ==========================================================================
+   Background — tropical dusk, drifting aurora, VHS grain + scanlines
+   ========================================================================== */
+
+.bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background:
+    /* keeps warmth behind the card on wide viewports, where the corner
+       blobs below are too far away to reach it */
+    radial-gradient(58% 48% at 50% 40%, rgba(166, 87, 10, 0.18) 0%, transparent 72%),
+    radial-gradient(110% 80% at 50% -10%, var(--cocoa-800) 0%, transparent 62%),
+    /* the teal floor is the palm shadow out of the avatar — it stops the page
+       being warm top to bottom and gives the card something cool to sit on */
+    radial-gradient(90% 70% at 50% 110%, var(--abyss-900) 0%, transparent 58%),
+    var(--void-950);
+}
+
+.aurora {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  will-change: transform;
+}
+
+/* amber carries the ambient: #A6570A is S89 at L35, a properly saturated
+   mid-dark, so it fills the frame without flattening it */
+.aurora--1 {
+  width: 58rem; height: 58rem;
+  top: -24rem; left: -16rem;
+  background: radial-gradient(circle, rgba(166, 87, 10, 0.40) 0%, transparent 68%);
+  animation: drift-1 26s var(--ease-soft) infinite alternate;
+}
+
+/* the sunset sky, opposite corner — a genuinely different hue, which is what
+   keeps this page from reading as one flat colour the way a mono palette does */
+.aurora--2 {
+  width: 52rem; height: 52rem;
+  bottom: -22rem; right: -14rem;
+  background: radial-gradient(circle, rgba(101, 60, 104, 0.38) 0%, transparent 68%);
+  animation: drift-2 32s var(--ease-soft) infinite alternate;
+}
+
+/* the brighter magenta of that same sky, used sparingly as a spice */
+.aurora--3 {
+  width: 38rem; height: 38rem;
+  top: 30%; right: -16rem;
+  background: radial-gradient(circle, rgba(182, 102, 147, 0.15) 0%, transparent 66%);
+  animation: drift-3 38s var(--ease-soft) infinite alternate;
+}
+
+@keyframes drift-1 {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(6rem, 4rem, 0) scale(1.14); }
+}
+@keyframes drift-2 {
+  from { transform: translate3d(0, 0, 0) scale(1.08); }
+  to   { transform: translate3d(-5rem, -3.5rem, 0) scale(1); }
+}
+@keyframes drift-3 {
+  from { transform: translate3d(0, 0, 0); opacity: 0.75; }
+  to   { transform: translate3d(-4rem, 5rem, 0); opacity: 1; }
+}
+
+.grain {
+  position: absolute;
+  inset: -50%;
+  opacity: 0.045;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain-shift 0.7s steps(1) infinite;
+}
+
+@keyframes grain-shift {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(-2%, 1%); }
+  50%  { transform: translate(1%, -2%); }
+  75%  { transform: translate(-1%, -1%); }
+  100% { transform: translate(2%, 1%); }
+}
+
+.scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 0, 0, 0.045) 3px,
+    rgba(0, 0, 0, 0.045) 4px
+  );
+}
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(125% 95% at 50% 50%, transparent 38%, rgba(9, 4, 3, 0.78) 100%);
+}
+
+/* ==========================================================================
+   Card
+   ========================================================================== */
+
+.card {
+  width: 100%;
+  max-width: 27.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* staggered entrance */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(14px);
+  filter: blur(6px);
+  animation: reveal 0.9s var(--ease) forwards;
+  animation-delay: calc(var(--i) * 70ms + 120ms);
+}
+
+@keyframes reveal {
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+/* ==========================================================================
+   Hero
+   ========================================================================== */
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 2.25rem;
+}
+
+.avatar {
+  position: relative;
+  width: 8.25rem;
+  height: 8.25rem;
+  display: grid;
+  place-items: center;
+  margin-bottom: 1.35rem;
+}
+
+/* amber-600 rather than amber-700: this has to read as a halo against the
+   ambient right behind it, so it needs the lift in lightness */
+.avatar__glow {
+  position: absolute;
+  inset: -18%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(213, 121, 24, 0.52) 0%, transparent 68%);
+  filter: blur(20px);
+  animation: breathe 5.5s var(--ease-soft) infinite alternate;
+}
+
+@keyframes breathe {
+  from { opacity: 0.55; transform: scale(0.94); }
+  to   { opacity: 1;    transform: scale(1.06); }
+}
+
+/* thin conic ring, masked hollow — gold into the hair yellow into the sky */
+.avatar__ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  padding: 2px;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    var(--gold-500) 70deg,
+    var(--yellow-300) 120deg,
+    var(--mauve-400) 190deg,
+    transparent 250deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+          mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  opacity: 0.9;
+  animation: spin 9s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(1turn); } }
+
+.avatar__img {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(45, 27, 25, 0.9);
+  box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.85);
+  transition: transform 0.5s var(--ease);
+  user-select: none;
+}
+
+.avatar:hover .avatar__img { transform: scale(1.04); }
+
+.name {
+  font-size: clamp(2.1rem, 8vw, 2.6rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  background: linear-gradient(175deg, var(--white) 30%, var(--gold-500) 100%);
+  -webkit-background-clip: text;
+          background-clip: text;
+  color: transparent;
+}
+
+.kana {
+  font-family: "Noto Sans JP", "Outfit", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 400;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  margin-top: 0.5rem;
+  color: var(--gold-500);
+  opacity: 0.85;
+}
+
+.bio {
+  margin-top: 0.85rem;
+  font-size: 0.95rem;
+  font-weight: 300;
+  color: var(--text-dim);
+}
+
+/* --- live subscriber pill (the main channel, @NathanMCShorts) --- */
+
+.subs {
+  margin-top: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 1.05rem 0.5rem 0.9rem;
+  border-radius: 999px;
+  text-decoration: none;
+  color: var(--text);
+  background: rgba(253, 199, 53, 0.1);
+  border: 1px solid rgba(253, 199, 53, 0.26);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: background 0.4s var(--ease), border-color 0.4s var(--ease),
+              transform 0.4s var(--ease), box-shadow 0.4s var(--ease);
+}
+
+.subs:hover {
+  background: rgba(253, 199, 53, 0.18);
+  border-color: rgba(254, 214, 57, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px -12px rgba(253, 199, 53, 0.7);
+}
+
+.subs__dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--gold-400);
+  box-shadow: 0 0 0 0 rgba(254, 214, 57, 0.7);
+  animation: pulse 2.4s var(--ease-soft) infinite;
+  flex: none;
+}
+
+@keyframes pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(254, 214, 57, 0.55); }
+  70%  { box-shadow: 0 0 0 0.5rem rgba(254, 214, 57, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(254, 214, 57, 0); }
+}
+
+.subs__count {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold-400);
+  transition: opacity 0.3s var(--ease);
+  /* the count-up passes through wider strings than it lands on
+     ("1.23K" -> "101K"); reserve the widest so the pill can't resize */
+  min-width: 5ch;
+  text-align: center;
+}
+
+.subs__count[data-state="loading"] { opacity: 0.4; }
+
+/* brief flash when the live count ticks */
+.subs__count.is-bump { animation: bump 0.65s var(--ease); }
+
+@keyframes bump {
+  0%   { transform: translateY(0); text-shadow: none; }
+  35%  { transform: translateY(-3px); text-shadow: 0 0 14px rgba(254, 214, 57, 0.85); }
+  100% { transform: translateY(0); text-shadow: none; }
+}
+
+.subs__label {
+  font-size: 0.85rem;
+  font-weight: 300;
+  color: var(--text-dim);
+}
+
+/* ==========================================================================
+   Link tiles
+   ========================================================================== */
+
+.links {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+/* Three of these five tiles are YouTube channels, so brand-red on all three
+   would say nothing about which is which. The main channel keeps the red; the
+   other two take palette colours (the fruit gold, the palm green) and the
+   glyph carries the platform. */
+.tile[data-brand="youtube"]  { --brand: #FF0033; }
+.tile[data-brand="yt-mango"] { --brand: var(--gold-500); }
+.tile[data-brand="yt-mods"]  { --brand: var(--leaf-400); }
+.tile[data-brand="discord"]  { --brand: #5865F2; }
+.tile[data-brand="x"]        { --brand: #FFFFFF; }
+
+.tile {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.95rem;
+  padding: 0.95rem 1.1rem;
+  border-radius: 1rem;
+  text-align: left;
+  text-decoration: none;
+  color: var(--text);
+  font-family: inherit;
+  cursor: pointer;
+  background: var(--tile-bg);
+  border: 1px solid var(--tile-border);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition:
+    transform 0.45s var(--ease),
+    background 0.45s var(--ease),
+    border-color 0.45s var(--ease),
+    box-shadow 0.45s var(--ease);
+}
+
+.tile:hover {
+  transform: translateY(-3px);
+  background: var(--tile-bg-hover);
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+  box-shadow:
+    0 14px 34px -14px color-mix(in srgb, var(--brand) 60%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--brand) 14%, transparent) inset;
+}
+
+.tile:active { transform: translateY(-1px) scale(0.99); }
+
+/* diagonal sheen sweeping across on hover */
+.tile__sheen {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    color-mix(in srgb, var(--brand) 16%, transparent) 48%,
+    transparent 66%
+  );
+  transform: translateX(-120%);
+  transition: opacity 0.3s var(--ease);
+}
+
+.tile:hover .tile__sheen {
+  opacity: 1;
+  animation: sweep 0.95s var(--ease) forwards;
+}
+
+@keyframes sweep {
+  from { transform: translateX(-120%); }
+  to   { transform: translateX(120%); }
+}
+
+.tile__icon {
+  flex: none;
+  width: 2.4rem;
+  height: 2.4rem;
+  display: grid;
+  place-items: center;
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: background 0.45s var(--ease), border-color 0.45s var(--ease),
+              transform 0.45s var(--ease);
+}
+
+.tile__icon svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: var(--text-dim);
+  transition: fill 0.45s var(--ease), filter 0.45s var(--ease);
+}
+
+.tile:hover .tile__icon {
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+  border-color: color-mix(in srgb, var(--brand) 34%, transparent);
+  transform: scale(1.06);
+}
+
+.tile:hover .tile__icon svg {
+  fill: var(--brand);
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--brand) 55%, transparent));
+}
+
+.tile__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.tile__title {
+  font-size: 0.98rem;
+  font-weight: 500;
+  letter-spacing: -0.012em;
+}
+
+.tile__sub {
+  font-size: 0.78rem;
+  font-weight: 300;
+  color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.45s var(--ease);
+}
+
+.tile:hover .tile__sub { color: var(--text-dim); }
+
+/* marks the main channel — three YouTube tiles otherwise look interchangeable */
+.tile__badge {
+  flex: none;
+  margin-right: 0.15rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.45rem;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold-400);
+  background: rgba(253, 199, 53, 0.12);
+  border: 1px solid rgba(253, 199, 53, 0.28);
+  transition: background 0.45s var(--ease), border-color 0.45s var(--ease),
+              color 0.45s var(--ease);
+}
+
+.tile:hover .tile__badge {
+  background: rgba(253, 199, 53, 0.2);
+  border-color: rgba(254, 214, 57, 0.5);
+  color: var(--cream-100);
+}
+
+.tile__arrow {
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--text-faint);
+  transition: color 0.45s var(--ease), transform 0.45s var(--ease);
+}
+
+.tile__arrow svg { width: 1rem; height: 1rem; display: block; }
+
+.tile:hover .tile__arrow {
+  color: var(--brand);
+  transform: translateX(3px);
+}
+
+/* ==========================================================================
+   Footer
+   ========================================================================== */
+
+.foot {
+  margin-top: 2rem;
+  font-size: 0.72rem;
+  font-weight: 300;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* ==========================================================================
+   Small screens
+   ========================================================================== */
+
+@media (max-width: 26rem) {
+  .avatar { width: 7.25rem; height: 7.25rem; }
+  .tile { padding: 0.85rem 0.95rem; gap: 0.8rem; }
+  .tile__sub { font-size: 0.74rem; }
+  .tile__badge { font-size: 0.55rem; padding: 0.18rem 0.4rem; letter-spacing: 0.1em; }
+}
+
+/* ==========================================================================
+   Reduced motion — keep the design, drop the movement
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  [data-reveal] { opacity: 1; transform: none; filter: none; }
+  .grain { animation: none; }
+  .avatar__ring { animation: none; }
+}

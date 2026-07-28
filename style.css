@@ -28,9 +28,18 @@
   --yellow-300: #FEFB05; /* 2.37% — the hair highlight */
   --cream-100:  #FEFCD9; /* 1.64% */
   --plum-600:   #653C68; /* 0.57% — the deep end of the sunset sky */
-  --mauve-400:  #B66693; /* 0.98% — the sky itself; the spice */
+  --mauve-400:  #B66693; /* 0.98% — the sky itself; kept only for the avatar ring */
   --leaf-400:   #08D736; /* 0.52% — the palms */
   --white:      #FDFEF9; /* 1.55% */
+
+  /* sampled from assets/bg.jpg, the same way — the two sources agree on hue
+     (the avatar's gold is H20-59, the background's fire is H0-59), which is
+     why this drops in without a repaint of the accents */
+  --flame-500:  #FC7614; /* 6.17% of the background — its signature orange */
+  --flame-600:  #FC6716; /* 5.57% */
+  --ember-800:  #871703; /* 0.93% — L27 */
+  --ember-900:  #570704; /* 1.29% — L18, the darkest well-represented */
+  --sun-300:    #FDE847; /* 0.91% — the sun itself */
 
   --text:       var(--white);
   --text-dim:   rgba(253, 254, 249, 0.58);
@@ -85,15 +94,46 @@ body {
   inset: 0;
   z-index: -1;
   overflow: hidden;
+  background: var(--void-950);
+}
+
+/* The photograph, knocked a long way down. It is an extremely hot source —
+   99.8% of its pixels are chromatic and its dominant buckets sit at L50+ —
+   so at full strength nothing on top of it is readable. Brightness does the
+   heavy lifting, saturation comes down so the oranges stop vibrating against
+   the gold accents, and 1.5px of blur kills the JPEG noise the darkening
+   would otherwise exaggerate. inset:-2% hides the blur bleeding at the edges. */
+.photo {
+  position: absolute;
+  inset: -2%;
+  background: url("assets/bg.jpg") center 42% / cover no-repeat;
+  filter: saturate(0.9) brightness(0.72) blur(2px);
+}
+
+/* Darkest through the middle, where the card sits, and lighter at the edges —
+   the opposite of a vignette, so the pagoda and the tree still read around the
+   content instead of being flattened out of existence. */
+.scrim {
+  position: absolute;
+  inset: 0;
   background:
-    /* keeps warmth behind the card on wide viewports, where the corner
-       blobs below are too far away to reach it */
-    radial-gradient(58% 48% at 50% 40%, rgba(166, 87, 10, 0.18) 0%, transparent 72%),
-    radial-gradient(110% 80% at 50% -10%, var(--cocoa-800) 0%, transparent 62%),
-    /* the teal floor is the palm shadow out of the avatar — it stops the page
-       being warm top to bottom and gives the card something cool to sit on */
-    radial-gradient(90% 70% at 50% 110%, var(--abyss-900) 0%, transparent 58%),
-    var(--void-950);
+    /* The scrim is vertical, not centred, because on a phone the card is 440px
+       inside a 480px window — any ellipse big enough to make the tiles readable
+       swallows the whole screen and the photograph may as well not be there.
+       So the image lives at the TOP, behind the hero, where the type is large
+       and gold and can survive it, and the page darkens into the tile stack.
+
+       Sized in rem rather than %, so it tracks the 27.5rem card at every width
+       instead of the window. */
+    radial-gradient(ellipse 30rem 26rem at 50% 76%,
+      rgba(10, 4, 3, 0.82) 0%,
+      rgba(10, 4, 3, 0.5) 60%,
+      rgba(10, 4, 3, 0) 100%),
+    linear-gradient(to bottom,
+      rgba(10, 4, 3, 0.36) 0%,
+      rgba(10, 4, 3, 0.46) 26%,
+      rgba(10, 4, 3, 0.76) 62%,
+      rgba(10, 4, 3, 0.88) 100%);
 }
 
 .aurora {
@@ -103,30 +143,23 @@ body {
   will-change: transform;
 }
 
-/* amber carries the ambient: #A6570A is S89 at L35, a properly saturated
-   mid-dark, so it fills the frame without flattening it */
+/* The auroras are no longer the ambient — the photograph is. They survive only
+   to keep the drift alive behind a still image and to bleed the photo's own
+   colours into the dark corners, so both are sampled from bg.jpg and both are
+   far weaker than they were. The sky-plum one is gone: there is no purple
+   anywhere in this background and it fought the fire. */
 .aurora--1 {
   width: 58rem; height: 58rem;
   top: -24rem; left: -16rem;
-  background: radial-gradient(circle, rgba(166, 87, 10, 0.40) 0%, transparent 68%);
+  background: radial-gradient(circle, rgba(252, 118, 20, 0.16) 0%, transparent 68%);
   animation: drift-1 26s var(--ease-soft) infinite alternate;
 }
 
-/* the sunset sky, opposite corner — a genuinely different hue, which is what
-   keeps this page from reading as one flat colour the way a mono palette does */
 .aurora--2 {
   width: 52rem; height: 52rem;
   bottom: -22rem; right: -14rem;
-  background: radial-gradient(circle, rgba(101, 60, 104, 0.38) 0%, transparent 68%);
+  background: radial-gradient(circle, rgba(135, 23, 3, 0.30) 0%, transparent 68%);
   animation: drift-2 32s var(--ease-soft) infinite alternate;
-}
-
-/* the brighter magenta of that same sky, used sparingly as a spice */
-.aurora--3 {
-  width: 38rem; height: 38rem;
-  top: 30%; right: -16rem;
-  background: radial-gradient(circle, rgba(182, 102, 147, 0.15) 0%, transparent 66%);
-  animation: drift-3 38s var(--ease-soft) infinite alternate;
 }
 
 @keyframes drift-1 {

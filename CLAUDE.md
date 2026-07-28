@@ -123,11 +123,34 @@ click/tap/keypress anywhere on the page, at 22% volume with a 1.6s fade-in, and 
   easing the auroras: mean 39.5, tile delta 40.7, centre-to-corner 21.9, backdrop behind the tiles
   16.9 — against the Blissolic reference's 40.0 / 27.3 / 20.1 / 18.4.
 
-- **This palette is multi-hue, so the ambient carries two hues.** 61.5% of chromatic pixels are
-  amber/gold (H20–59), 9.3% palm green (H130–179), 7.4% sunset mauve (H290–339). Aurora 1 is
-  amber, aurora 2 is sky-plum in the opposite corner, aurora 3 is the brighter magenta as a spice,
-  and the bottom of the page floor is the teal palm shadow so it isn't warm top to bottom. The
-  Dewier site had to fake this with value contrast because its avatar was 98.84% one hue.
+- **The background photograph is now the ambient.** `assets/bg.jpg` — an autumn pagoda sunset,
+  from the user, cropped and scaled to 1400x788 / q72 (226KB; 1920 was 391KB of upscale past the
+  1672px source, so it was pointless). Sampled the same way as the avatars: 99.84% chromatic,
+  dominant buckets `#FC7614` (6.17%) and `#FC6716` (5.57%) at L53, deep embers `#570704` (L18) and
+  `#871703` (L27). **The two sources agree on hue** — the avatar's gold is H20–59, the photo's fire
+  is H0–59 — which is why the background dropped in without repainting a single accent.
+
+  The two surviving auroras are re-tinted from the photo and dropped to 0.16/0.30; they exist only
+  to keep some drift alive behind a still image. **The sky-plum aurora is gone** — there is no
+  purple anywhere in this background and it fought the fire.
+
+- **The scrim is vertical, not centred, and sized in rem.** Two failures got it here, both worth
+  not repeating. A centred ellipse sized in `%` covered the card on desktop but shrank off it on a
+  phone, where the card is 440px inside a 480px window — the tiles ended up sitting on bare
+  photograph. Then darkening enough to fix that made the image invisible at phone width, because
+  any scrim wide enough to cover a near-full-width card covers the whole screen. The answer is to
+  stop fighting it: the photo lives at the **top**, behind the hero, where the type is large and
+  gold and can survive a busy backdrop, and the page darkens into the tile stack. The ellipse is
+  `30rem 26rem`, so it tracks the 27.5rem card at every viewport rather than the window.
+
+  Final measurements: mean luma 42.8, backdrop behind the tiles 17.5, centre-to-corner 18.0 —
+  against the Blissolic reference's 40.0 / 18.4 / 20.1. Photo filter is
+  `saturate(0.9) brightness(0.72) blur(2px)`; the blur calms the foliage texture behind the tiles
+  and hides JPEG noise the darkening would otherwise exaggerate.
+
+- **No `preload` on `bg.jpg`.** It warned that the preload went unused and risked a second fetch of
+  a 226KB file. The stylesheet is render-blocking anyway, so the image starts loading the moment
+  the CSS parses and the preload bought nothing.
 
 - **Only the main channel's YouTube tile is red.** Three brand-red tiles say nothing about which
   channel is which, so MangoPlayz takes the fruit gold `#FDC735` and MangoMods the palm green

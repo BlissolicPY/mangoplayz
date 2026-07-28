@@ -1143,10 +1143,14 @@ html.gated body { overflow: hidden; }
   animation: leaf-spin var(--spinDur) linear infinite;
 }
 
+/* --y0 lets a leaf begin part-way down the screen while still playing from 0%,
+   so it fades in wherever it starts. See leaves.js for why a negative delay
+   was the wrong tool for that. The ramp is slow at both ends deliberately —
+   these should drift into existence, not switch on. */
 @keyframes leaf-fall {
-  from { transform: translate3d(0, 0, 0); opacity: 0; }
-  8%   { opacity: var(--op); }
-  88%  { opacity: var(--op); }
+  from { transform: translate3d(0, var(--y0, 0vh), 0); opacity: 0; }
+  14%  { opacity: var(--op); }
+  86%  { opacity: var(--op); }
   to   { transform: translate3d(var(--drift), 132vh, 0); opacity: 0; }
 }
 

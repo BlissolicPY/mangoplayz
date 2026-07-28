@@ -122,11 +122,26 @@
     leaf.setAttribute("aria-hidden", "true");
 
     const size = rand(18, 48);
+
+    /* The first batch has to start part-way down the screen, or the page sits
+       bare for ten seconds. The obvious way to do that is a NEGATIVE animation
+       delay — and it looks wrong: it drops each leaf into the middle of its
+       timeline, past the fade-in, so the whole batch materialises at full
+       opacity at once.
+
+       Instead each leaf gets a real starting offset and plays its animation
+       from 0%, so it fades in properly wherever it begins. The duration is
+       scaled by the distance it still has to travel, otherwise a leaf starting
+       near the bottom would drift down at a fraction of everyone else's speed.
+       A small positive delay staggers the batch so the fade-ins don't stack. */
+    const y0 = initial ? rand(0, 108) : 0;
+    const base = rand(8, 15);
+
     leaf.style.setProperty("--left", `${rand(-2, 100)}vw`);
     leaf.style.setProperty("--size", `${size.toFixed(0)}px`);
-    leaf.style.setProperty("--dur", `${rand(8, 15).toFixed(1)}s`);
-    // stagger the first batch up the screen so the page isn't bare for 10s
-    leaf.style.setProperty("--delay", initial ? `-${rand(0, 12).toFixed(1)}s` : "0s");
+    leaf.style.setProperty("--y0", `${y0.toFixed(1)}vh`);
+    leaf.style.setProperty("--dur", `${(base * ((132 - y0) / 132)).toFixed(1)}s`);
+    leaf.style.setProperty("--delay", initial ? `${rand(0, 1.6).toFixed(2)}s` : "0s");
     leaf.style.setProperty("--drift", `${rand(-9, 9)}vw`);
     leaf.style.setProperty("--op", rand(0.55, 0.92).toFixed(2));
     leaf.style.setProperty("--blur", `${rand(0, 0.5).toFixed(2)}px`);

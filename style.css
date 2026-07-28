@@ -1064,6 +1064,102 @@ html.gated body { overflow: hidden; }
 }
 
 /* ==========================================================================
+   Leaf gust — plays once as the intro gate clears. See leaves.js.
+
+   Above the gate (z 70) rather than under it, so the leaves stay crisp while
+   the overlay is still fading instead of being dimmed by it.
+   ========================================================================== */
+
+.leaf {
+  position: fixed;
+  top: var(--top);
+  left: -14vw;
+  z-index: 70;
+  pointer-events: none;
+  will-change: transform, opacity;
+  animation: leaf-cross var(--dur) linear var(--delay) both;
+}
+
+.leaf i {
+  display: block;
+  will-change: transform;
+  animation: leaf-sway var(--swayDur) ease-in-out var(--delay) infinite alternate;
+}
+
+.leaf svg {
+  display: block;
+  width: var(--size);
+  height: var(--size);
+  color: var(--tint);
+  filter: blur(var(--blur)) drop-shadow(0 3px 6px rgba(0, 0, 0, 0.45));
+  animation: leaf-spin var(--spinDur) linear infinite var(--spinDir);
+}
+
+/* linear on purpose — an eased sweep reads as a swipe, wind does not slow down
+   in the middle of the screen */
+@keyframes leaf-cross {
+  from { transform: translate3d(0, 0, 0); opacity: 0; }
+  9%   { opacity: var(--op); }
+  82%  { opacity: var(--op); }
+  to   { transform: translate3d(128vw, var(--drift), 0); opacity: 0; }
+}
+
+@keyframes leaf-sway {
+  from { transform: translateY(calc(var(--sway) * -1)); }
+  to   { transform: translateY(var(--sway)); }
+}
+
+@keyframes leaf-spin {
+  to { transform: rotate(1turn); }
+}
+
+/* --- the ambient drift that follows the gust ---
+   z-index 1 against the card's 2, so nothing ever crosses the text and the
+   tiles' backdrop-filter blurs the leaves as they pass behind the glass. */
+.leaf-fall {
+  position: fixed;
+  top: -16vh;
+  left: var(--left);
+  z-index: 1;
+  pointer-events: none;
+  will-change: transform, opacity;
+  animation: leaf-fall var(--dur) linear var(--delay) both;
+}
+
+.leaf-fall i {
+  display: block;
+  will-change: transform;
+  animation: leaf-sway var(--swayDur) ease-in-out infinite alternate;
+}
+
+.leaf-fall svg {
+  display: block;
+  width: var(--size);
+  height: var(--size);
+  color: var(--tint);
+  filter: blur(var(--blur));
+  animation: leaf-spin var(--spinDur) linear infinite;
+}
+
+@keyframes leaf-fall {
+  from { transform: translate3d(0, 0, 0); opacity: 0; }
+  8%   { opacity: var(--op); }
+  88%  { opacity: var(--op); }
+  to   { transform: translate3d(var(--drift), 132vh, 0); opacity: 0; }
+}
+
+/* the card has to own a stacking position for the drift to sit behind it */
+.card {
+  position: relative;
+  z-index: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leaf,
+  .leaf-fall { display: none; }
+}
+
+/* ==========================================================================
    Cursor trail — a lagging, speed-stretched glow behind the real pointer.
    The native cursor stays visible on purpose; see cursor.js.
    ========================================================================== */

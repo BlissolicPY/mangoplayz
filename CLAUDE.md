@@ -54,6 +54,25 @@ fallback), 5 tiles, no horizontal overflow.
 - **The page is meant to fit without scrolling**, so two height-based media queries tighten spacing
   only — nothing changes size or colour. Verified fitting at 1440x900 and 1366x700.
 
+- **`leaves.js` — two separate effects, both hooked to `mp:enter`** (never to a click handler of
+  their own; the gate must stay independent, and these are pure decoration).
+  - **The gust**: 64 leaves swept across as the gate clears. Motion is split over three nested
+    elements because one keyframe can't do it — the outer span crosses the viewport **linearly**
+    (an eased sweep reads as a swipe; wind doesn't slow in the middle of the screen), the middle
+    sways, the svg spins. All transform-only, so it stays on the compositor.
+    Sizes come from three depth bands (14% foreground at 110–190px, 41% mid, the rest small) with
+    duration, opacity, blur, sway and spin all derived from size: near leaves cross fast and sharp,
+    distant ones lag and blur, and big ones blur again for being past the focal plane. Tints are
+    the page's own `--flame` / `--gold` / `--ember` values, i.e. the maple in the background photo.
+  - **The drift**: after 1.8s, a sparse ambient fall — max 9 at a time, one every 1.7s, 11–26px,
+    9–17s each, opacity 0.2–0.45. The first batch uses **negative animation delays** so it starts
+    mid-screen rather than leaving the page bare for ten seconds. Spawning pauses on
+    `visibilitychange`.
+  - **`.leaf-fall` is z-index 1 and `.card` was given `position: relative; z-index: 2`** to make
+    that work. Two payoffs: nothing ever crosses the text, and since the tiles use
+    `backdrop-filter`, leaves passing behind them show through the glass as soft blurred shapes.
+    That only happens because they're underneath.
+
 - **`cursor.js`** is the same speed-stretched glow as the Blissolic site, re-tinted gold. Native
   cursor stays visible on purpose; see that project's CLAUDE.md for the reasoning and the caveat
   that headless Chromium throttles rAF so the motion can only be judged in a real browser.

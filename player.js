@@ -12,9 +12,26 @@
   "use strict";
 
   const VIDEO_ID = "bzZNZO-fnU0";
-  const VOLUME_DEFAULT = 22;   // 0-100. Deliberately low: this is background.
   const FADE_MS = 1600;        // ramp on first play, so it never punches in
   const API_TIMEOUT_MS = 8000; // if the API never loads, hide the widget
+
+  /* Volume needs two separate things and they are easy to conflate.
+
+     1. YouTube's setVolume is LINEAR AMPLITUDE, not loudness. setVolume(22) is
+        about -13 dB — plenty loud as a background bed. Ears are roughly
+        logarithmic, so a linear slider also feels dead across its top half and
+        then collapses at the very bottom, which makes it feel impossible to
+        turn down. VOLUME_CURVE fixes the feel: the slider carries perceived
+        loudness 0-100 and is raised to this power to get the amplitude YouTube
+        wants, so the bottom half of the travel covers the quiet end properly.
+
+     2. VOLUME_DEFAULT is a slider position, NOT an amplitude. 28 maps to
+        amplitude 6, about -24 dB — roughly half the perceived loudness of the
+        old default, which was still too hot at a system volume of 34.
+
+     Turn the whole page down further by lowering VOLUME_DEFAULT alone. */
+  const VOLUME_CURVE = 2.2;
+  const VOLUME_DEFAULT = 28;
 
   const el = {
     root:  document.getElementById("player"),
@@ -27,16 +44,19 @@
     dur:   document.getElementById("tDur"),
     vol:   document.getElementById("vol"),
     mute:  document.getElementById("muteBtn"),
+    label: document.getElementById("npLabel"),
   };
 
   if (!el.root || !el.host) return;
 
   /* ---------- tiny persistence (localStorage throws in some privacy modes) ---------- */
 
+  // mp2, not mp: the old namespace stored volumes on a different scale and a
+  // pause flag from before autoplay existed, so nothing is inherited
   const store = {
     get(k, fallback) {
       try {
-        const v = localStorage.getItem("mp:" + k);
+        const v = localStorage.getItem("mp2:" + k);
         return v === null ? fallback : v;
       } catch {
         return fallback;
@@ -44,7 +64,7 @@
     },
     set(k, v) {
       try {
-        localStorage.setItem("mp:" + k, String(v));
+        localStorage.setItem("mp2:" + k, String(v));
       } catch {
         /* nothing to do — the widget just won't remember */
       }
@@ -60,10 +80,17 @@
   let fadeId = null;
   let tickId = null;
 
+  // vol2, not vol: values stored under the old key were raw amplitudes and mean
+  // something different on this scale, so they're deliberately not inherited
   let volume = clamp(parseInt(store.get("vol", VOLUME_DEFAULT), 10) || VOLUME_DEFAULT, 0, 100);
   let muted = store.get("muted", "false") === "true";
 
   function clamp(n, lo, hi) { return Math.min(hi, Math.max(lo, n)); }
+
+  // slider position (perceived loudness) -> the amplitude YouTube expects
+  function amplitude(pos) {
+    return Math.round(100 * Math.pow(clamp(pos, 0, 100) / 100, VOLUME_CURVE));
+  }
 
   function fmt(s) {
     if (!Number.isFinite(s) || s < 0) return "--:--";
@@ -103,7 +130,7 @@
     if (muted) player.mute();
     else {
       player.unMute();
-      player.setVolume(volume);
+      player.setVolume(amplitude(volume));
     }
   }
 
@@ -115,7 +142,7 @@
   function fadeIn() {
     if (!ready || muted) return applyVolume();
     cancelFade();
-    const target = volume;
+    const target = amplitude(volume);
     const start = performance.now();
     player.unMute();
     player.setVolume(0);
@@ -239,25 +266,53 @@
     applyVolume();
   });
 
-  /* ---------- autostart on the first real interaction ----------
-     Browsers refuse audio without a user gesture, and rightly so. The first
-     click/tap/key anywhere on the page counts, which is exactly the "starts
-     when someone clicks on the site" behaviour without fighting the policy. */
+  /* ---------- autostart ----------
+     Audible autoplay is blocked by every browser until the visitor has some
+     history with the site. Chrome relaxes it once its Media Engagement Index
+     for the domain is high enough — so regulars (him, us) usually DO get sound
+     immediately, while a first-time visitor does not. Nothing defeats this;
+     anything that claims to is muting itself.
 
-  function armAutostart() {
-    if (store.get("auto", "on") === "off") return;
+     So: try audible first, and if the browser refused, fall back to MUTED
+     autoplay, which is always permitted. The track is then already running and
+     in sync, and the first click/tap/key unmutes it mid-song rather than
+     starting it from the top. */
+
+  const GESTURES = ["pointerdown", "touchstart", "keydown"];
+
+  function markBlocked(on) {
+    el.root.dataset.blocked = String(on);
+    if (el.label) el.label.textContent = on ? "Click for sound" : "Now playing";
+  }
+
+  function autostart() {
+    if (!ready || store.get("auto", "on") === "off") return;
+
+    player.unMute();
+    player.setVolume(0);
+    player.playVideo();
+
+    // the policy verdict isn't synchronous — check whether it actually ran
+    setTimeout(() => {
+      const s = player.getPlayerState();
+      if (s === YT.PlayerState.PLAYING || s === YT.PlayerState.BUFFERING) fadeIn();
+      else silentStart();
+    }, 900);
+  }
+
+  function silentStart() {
+    player.mute();
+    player.playVideo();
+    markBlocked(true);
+
     const kick = () => {
-      remove();
-      play(true);
+      GESTURES.forEach((t) => window.removeEventListener(t, kick, true));
+      markBlocked(false);
+      if (player.getPlayerState() !== YT.PlayerState.PLAYING) player.playVideo();
+      fadeIn(); // no-op'd into a plain applyVolume() if they'd muted it before
     };
-    const remove = () => {
-      ["pointerdown", "touchstart", "keydown"].forEach((t) =>
-        window.removeEventListener(t, kick, true)
-      );
-    };
-    ["pointerdown", "touchstart", "keydown"].forEach((t) =>
-      window.addEventListener(t, kick, { capture: true, once: true })
-    );
+
+    GESTURES.forEach((t) => window.addEventListener(t, kick, { capture: true, once: true }));
   }
 
   /* ---------- YouTube API ---------- */
@@ -289,7 +344,7 @@
           applyVolume();
           paintProgress(0);
           startTicking();
-          armAutostart();
+          autostart();
         },
         onStateChange: (e) => {
           const S = YT.PlayerState;

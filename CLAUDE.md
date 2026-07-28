@@ -48,12 +48,25 @@ click/tap/keypress anywhere on the page, at 22% volume with a 1.6s fade-in, and 
   blocked by an extension. If it dies, swap `VIDEO_ID` for an official upload.
 - **"Stabilise the volume" is done by starting quiet and ramping, not by processing.** A
   cross-origin iframe gives no access to the audio stream, so there is no Web Audio compressor or
-  gain node to hang off it. YouTube already loudness-normalises server-side; the rest is
-  `VOLUME_DEFAULT = 22` plus the fade so it never punches in.
-- **Autoplay policy is respected, not fought.** Browsers refuse audio without a user gesture, so
-  the first interaction anywhere arms playback — which is also exactly the requested "plays when
-  someone clicks on the site". A deliberate pause is remembered (`mp:auto = off`), so a visitor
-  who turns it off isn't ambushed on their next visit. Volume and mute persist too.
+  gain node to hang off it. YouTube already loudness-normalises server-side; the rest is the
+  default level plus the fade so it never punches in.
+- **The slider is perceptual; `setVolume` is not.** YouTube's `setVolume` takes linear amplitude,
+  so a raw slider feels dead across its top half and then collapses at the bottom — which is
+  exactly how the first version felt ("hard to drag it down a lot"). `player.js` now treats the
+  slider as perceived loudness and raises it to `VOLUME_CURVE = 2.2` to get the amplitude:
+  10 → 1, 28 → 6, 50 → 22, 100 → 100. **`VOLUME_DEFAULT = 28` is a slider position, not an
+  amplitude** — it lands on amplitude 6, about -24 dB, after 22 (-13 dB) was still too hot at a
+  system volume of 34. To make the whole site quieter, change that one constant.
+- **Autoplay: try audible, fall back to muted.** Audible autoplay is blocked everywhere until the
+  visitor has history with the site (Chrome gates it on its Media Engagement Index, so regulars do
+  get sound instantly and first-timers don't). `autostart()` calls `playVideo()`, waits 900ms and
+  checks `getPlayerState()`; if the browser refused, `silentStart()` plays it **muted** — always
+  permitted — and the first click/tap/key unmutes mid-song rather than restarting it. While in
+  that state the card's label reads "Click for sound" in gold (`[data-blocked="true"]`).
+  A deliberate pause is still remembered (`mp2:auto = off`), as do volume and mute.
+- **Storage namespace is `mp2:`.** The old `mp:` keys held amplitudes on the pre-curve scale and a
+  pause flag from before autoplay existed, so they are deliberately not inherited — everyone gets
+  the new quiet default once.
 - **`youtube-nocookie.com` is the player host**, so no tracking cookie is set unless it actually
   plays.
 - **Known limitation: iOS ignores `setVolume`.** The slider will move and persist but iOS routes

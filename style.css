@@ -684,6 +684,15 @@ body {
 .player[data-playing="true"] .player__eq i { opacity: 1; }
 .player[data-playing="false"] .player__eq i { animation-play-state: paused; }
 
+/* set when the browser refused audible autoplay: the track is already running,
+   silently, and the first click will bring the sound in */
+.player[data-blocked="true"] .player__label {
+  color: var(--gold-400);
+  opacity: 0.95;
+}
+
+.player[data-blocked="true"] .player__eq i { opacity: 0.45; }
+
 @keyframes eq {
   from { height: 25%; }
   to   { height: 100%; }
@@ -815,8 +824,8 @@ body {
   /* --vol is kept in sync by player.js so the filled part tracks the thumb */
   background: linear-gradient(
     to right,
-    var(--gold-500) calc(var(--vol, 22) * 1%),
-    rgba(255, 255, 255, 0.14) calc(var(--vol, 22) * 1%)
+    var(--gold-500) calc(var(--vol, 28) * 1%),
+    rgba(255, 255, 255, 0.14) calc(var(--vol, 28) * 1%)
   );
 }
 

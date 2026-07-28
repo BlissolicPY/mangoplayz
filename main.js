@@ -139,7 +139,8 @@
 
   async function showViews() {
     const el = document.getElementById("viewCount");
-    if (!el) return;
+    const numEl = document.getElementById("viewNum");
+    if (!el || !numEl) return;
 
     let counted = false;
     try {
@@ -155,8 +156,9 @@
         const n = Number(src.read(await res.json()));
         if (!Number.isFinite(n) || n <= 0) continue;
 
-        el.textContent = `${formatCount(n)} ${n === 1 ? "view" : "views"}`;
+        numEl.textContent = formatCount(n);
         el.dataset.state = "live";
+        el.setAttribute("aria-label", `${formatCount(n)} page ${n === 1 ? "view" : "views"}`);
         try {
           sessionStorage.setItem("mp2:counted", "1");
         } catch {

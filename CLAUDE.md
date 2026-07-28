@@ -73,6 +73,21 @@ fallback), 5 tiles, no horizontal overflow.
     `backdrop-filter`, leaves passing behind them show through the glass as soft blurred shapes.
     That only happens because they're underneath.
 
+- **Page views** sit in `.stats` next to the subscriber pill as an eye icon + number. A static page
+  can't count itself, so it uses keyless public counters — abacus first (bare `{value}` payload),
+  counterapi as fallback — both verified CORS-open from the live origin. The hit fires **once per
+  browser session** via `sessionStorage`, so refreshing doesn't inflate it; later loads just read.
+  The counter URL is public and anyone could bump it: it's a vanity number, not analytics. If both
+  services die the whole pill hides rather than leaving an eye staring at an em dash.
+
+  Two layout traps cost time here, both worth remembering:
+  - **`.stats` needs `width: 100%`.** Shrink-to-fit sized it to 242px while its contents needed
+    243, so the view pill wrapped to a second line over one pixel of rounding.
+  - **The short-viewport media queries were still setting `margin-top` on `.subs`.** Once the pill
+    moved inside the stats row that margin shoved it 17.6px below the view count. They target
+    `.stats` now. Same class of bug as the `.player` one: a rule written for the old structure,
+    silently surviving the restructure.
+
 - **`cursor.js`** is the same speed-stretched glow as the Blissolic site, re-tinted gold. Native
   cursor stays visible on purpose; see that project's CLAUDE.md for the reasoning and the caveat
   that headless Chromium throttles rAF so the motion can only be judged in a real browser.

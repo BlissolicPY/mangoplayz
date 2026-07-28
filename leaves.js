@@ -102,10 +102,16 @@
      the glass as a soft blurred shape. That is the nicest part of it and it is
      free — it only works because the leaves are underneath. */
 
-  const FALL_MAX = 9;         // concurrent leaves; more reads as weather
-  const FALL_EVERY = 1700;    // ms between spawns
+  const FALL_MAX = 28;        // concurrent leaves; fewer than ~20 reads as a bug
+  const FALL_EVERY = 550;     // ms between spawns
   let falling = 0;
   let fallTimer = null;
+
+  /* The drift needs a brighter set than the gust. The page's own darks
+     (#A6570A, #871703) are almost exactly the background photograph's mid-tones,
+     so leaves painted in them disappear into it — which is what "doesn't look
+     like it's even there" was. These are the tints that separate. */
+  const FALL_TINTS = ["#FDC735", "#FED639", "#FC7614", "#FC6716", "#D57918"];
 
   function dropLeaf(initial) {
     if (falling >= FALL_MAX) return;
@@ -115,16 +121,16 @@
     leaf.className = "leaf-fall";
     leaf.setAttribute("aria-hidden", "true");
 
-    const size = rand(11, 26);
+    const size = rand(18, 48);
     leaf.style.setProperty("--left", `${rand(-2, 100)}vw`);
     leaf.style.setProperty("--size", `${size.toFixed(0)}px`);
-    leaf.style.setProperty("--dur", `${rand(9, 17).toFixed(1)}s`);
+    leaf.style.setProperty("--dur", `${rand(8, 15).toFixed(1)}s`);
     // stagger the first batch up the screen so the page isn't bare for 10s
     leaf.style.setProperty("--delay", initial ? `-${rand(0, 12).toFixed(1)}s` : "0s");
     leaf.style.setProperty("--drift", `${rand(-9, 9)}vw`);
-    leaf.style.setProperty("--op", rand(0.2, 0.45).toFixed(2));
-    leaf.style.setProperty("--blur", `${rand(0, 1.1).toFixed(2)}px`);
-    leaf.style.setProperty("--tint", pick(TINTS));
+    leaf.style.setProperty("--op", rand(0.55, 0.92).toFixed(2));
+    leaf.style.setProperty("--blur", `${rand(0, 0.5).toFixed(2)}px`);
+    leaf.style.setProperty("--tint", pick(FALL_TINTS));
 
     const sway = document.createElement("i");
     sway.style.setProperty("--sway", `${rand(14, 40)}px`);
@@ -145,7 +151,7 @@
   }
 
   function startFalling() {
-    for (let i = 0; i < 5; i++) dropLeaf(true);
+    for (let i = 0; i < 16; i++) dropLeaf(true);
     fallTimer = setInterval(() => dropLeaf(false), FALL_EVERY);
   }
 

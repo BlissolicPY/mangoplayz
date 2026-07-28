@@ -1137,7 +1137,9 @@ html.gated body { overflow: hidden; }
   width: var(--size);
   height: var(--size);
   color: var(--tint);
-  filter: blur(var(--blur));
+  /* the drop-shadow is what actually separates them from the photograph — the
+     background is the same warm family, so without it they read as texture */
+  filter: blur(var(--blur)) drop-shadow(0 2px 5px rgba(0, 0, 0, 0.55));
   animation: leaf-spin var(--spinDur) linear infinite;
 }
 
@@ -1226,12 +1228,38 @@ html.gated body { overflow: hidden; }
 
 .foot {
   margin-top: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   font-size: 0.72rem;
   font-weight: 300;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--text-faint);
 }
+
+.foot__dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+.foot__views {
+  font-variant-numeric: tabular-nums;
+  transition: color 0.4s var(--ease), opacity 0.4s var(--ease);
+}
+
+.foot__views[data-state="loading"] { opacity: 0.4; }
+
+/* both counter services down — drop the separator too rather than leaving a
+   stray dot and an em dash sitting in the footer */
+.foot__views[data-state="dead"],
+.foot__views[data-state="dead"] + .foot__dot,
+.foot:has(.foot__views[data-state="dead"]) .foot__dot { display: none; }
+
+.foot:hover .foot__views { color: var(--gold-400); }
 
 /* ==========================================================================
    Small screens

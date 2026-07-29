@@ -1042,9 +1042,14 @@ html.gated body { overflow: hidden; }
 .gate[hidden] { display: none; }
 
 /* set by player.js just before removal, so it dissolves instead of vanishing */
+/* It deliberately KEEPS pointer-events. With `pointer-events: none` here, a tap
+   on a phone opened a random link: touchstart dismisses the gate, the gate stops
+   hit-testing, and the browser then synthesises the click from that same tap onto
+   whichever tile was under the finger. Staying hit-testable for the 0.6s fade
+   means that phantom click lands on the gate and does nothing. Found on the
+   Blissolic site; this page had it identically. Desktop cannot reproduce it. */
 .gate.is-leaving {
   animation: gate-out 0.6s var(--ease) forwards;
-  pointer-events: none;
 }
 
 @keyframes gate-in {

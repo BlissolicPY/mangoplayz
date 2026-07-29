@@ -227,6 +227,17 @@ Sets `data-q` on `<html>` to `high`, `mid` or `low` and fires `mp:quality` on ch
 
 ## Decisions & Rationale
 
+- **The intro gate must stay hit-testable while it fades (fixed 2026-07-29).** `.gate.is-leaving`
+  used to set `pointer-events: none`, and on a phone that made "click anywhere to enter" open a
+  random link: a tap fires `touchstart`, the gate dismisses, and the browser then synthesises the
+  mouse/`click` from that same tap — by which point the gate no longer hit-tested, so the click fell
+  through to whichever tile was under the finger. **Desktop cannot reproduce it**, which is how it
+  shipped on both sites. Fixed two ways: the gate keeps `pointer-events` for its 0.6s fade, and the
+  dismiss handler `preventDefault()`s touch input (needs `passive: false`, or the call is ignored).
+  Found on the Blissolic site; this page had it identically. Test with CDP
+  `Input.dispatchTouchEvent` and assert on the browser's tab count — the tiles are `target="_blank"`,
+  so the failure is a new tab rather than a navigation.
+
 - **The handle line was measurably unreadable, not merely dim (fixed 2026-07-29).** `.tile__sub`
   sat on `--text-faint` (0.34 alpha), weight 300, 12.5px. Sampled off a screenshot of the **live**
   page — glyph core against the tile substrate, mean sRGB 35.3 — that is **2.88:1**, against the

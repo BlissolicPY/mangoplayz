@@ -33,7 +33,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@400;500&display=swap" rel="stylesheet">
 <!-- ?v= bumped whenever style.css changes: browsers hold the old stylesheet
      otherwise and a redesign silently doesn't appear -->
-<link rel="stylesheet" href="style.css?v=14">
+<link rel="stylesheet" href="style.css?v=15">
 
 <script>
 /* The intro gate lives here, inline and ahead of everything, for two reasons.
@@ -54,7 +54,19 @@
 
   var EVENTS = ["pointerdown", "touchstart", "keydown"];
 
-  function enter() {
+  function enter(e) {
+    /* A tap is not one event: it fires touchstart, and then — after the finger
+       lifts — the browser synthesises mousedown/mouseup/click from it. Dismissing
+       on the first of those meant the synthetic click arrived once the gate was
+       already going, so on a phone "tap anywhere to enter" opened whichever link
+       was under the finger. Swallow the touch's default action so no
+       compatibility click is generated, and see .gate.is-leaving in style.css for
+       the other half of the fix. */
+    if (e && e.cancelable &&
+        (e.type === "touchstart" || e.pointerType === "touch")) {
+      e.preventDefault();
+    }
+
     EVENTS.forEach(function (t) { window.removeEventListener(t, enter, true); });
     root.classList.remove("gated");
 
@@ -67,7 +79,11 @@
     window.dispatchEvent(new CustomEvent("mp:enter"));
   }
 
-  EVENTS.forEach(function (t) { window.addEventListener(t, enter, { capture: true, once: true }); });
+  /* passive: false because touchstart listeners on window are passive by
+     default, and a passive listener's preventDefault() is ignored */
+  EVENTS.forEach(function (t) {
+    window.addEventListener(t, enter, { capture: true, once: true, passive: false });
+  });
 })();
 </script>
 </head>

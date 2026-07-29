@@ -39,6 +39,9 @@
   let running = false;
 
   function onMove(e) {
+    // quality.js hides the glow on a struggling machine; without this the rAF
+    // loop would keep running for an element nobody can see
+    if (document.documentElement.dataset.q === "low") return;
     pointerX = e.clientX;
     pointerY = e.clientY;
     target = 1;

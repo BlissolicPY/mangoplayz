@@ -24,7 +24,12 @@ fetch, not the fallback), 5 tiles, no horizontal overflow.
 `x.com/MangoPlayzz` 200. All three channels resolved via InnerTube.
 
 ## Where We Left Off
-2026-07-29 (later) — tile text legibility, ported from the Blissolic site after the same complaint
+2026-07-29 (latest) — **performance pass + the subscriber pill's dot removed** (user's request; the
+count is now the leftmost thing in the pill and the pill's padding is symmetric, since the shorter
+left padding only existed to balance a round dot against a text edge). See "Performance" below.
+`quality.js` and `assets/bg-baked.jpg` are new.
+
+Earlier that day — tile text legibility, ported from the Blissolic site after the same complaint
 there. Handles measured **2.88:1** against the tile substrate on the live page and are now
 **8.11:1**; titles, counts and arrows moved with them. `style.css?v=11`. Tile height is unchanged
 at 66px, so the one-screen layout still holds (`scrollHeight == innerHeight` at 1920x889). See the
@@ -35,6 +40,10 @@ all three description tags (`index.html:8` SEO, `:19` og, `:23` twitter), commit
 to `main` and verified live at the CDN. Nothing outstanding.
 
 ## Key Files
+- `quality.js` — the adaptive quality tier. Load it FIRST; everything else reads `data-q`.
+  Shared, near-identical, with `../Blissolic Website/quality.js`.
+- `assets/bg-baked.jpg` — the background with its filters already applied. `assets/bg.jpg` is the
+  source; nothing loads it.
 - `index.html` — the whole page. 5 tiles: the three channels, Discord, X. No email tile (he
   publishes none), so unlike the sibling sites there is no toast and no clipboard code.
 - `main.js` — live sub-count fetch + `abbreviate()` (integer-domain floor, the fixed version).
@@ -168,6 +177,53 @@ click/tap/keypress anywhere on the page, at 22% volume with a 1.6s fade-in, and 
   volume to the hardware buttons only. Mute/pause still work.
 - The offscreen host is a real 320x180 element pushed to `left:-10000px` rather than
   `display:none` or 0x0 — some browsers won't start playback in a collapsed frame.
+
+## Performance (2026-07-29)
+
+Ported from the Blissolic site, where the same effects were costing far more. The honest summary:
+**at identical visuals this page was already close to its floor, and the win here comes from the
+adaptive ladder** rather than from the background work.
+
+Headed Chrome, 1920x889, 8x CPU throttle via CDP, pointer sweeping the tiles, three passes per arm,
+alternating, medians. "before" is the previous commit served from a pinned copy:
+
+| arm | fps | p50 | frames >25 ms |
+|---|---|---|---|
+| before | 14.3 | 72.6 ms | 100% |
+| after, identical visuals (`?q=high`) | 14.6 | 66.7 ms | 100% |
+| after, ladder deciding | **41.1** | **24.2 ms** | **34%** |
+
+Unthrottled renderer CPU per wall second, 4 passes: 0.857 -> 0.828. Real but small.
+
+- **Why so different from Blissolic's +54% at equal visuals:** that page's bats animated wing paths
+  *inside* a `blur() + 2x drop-shadow()` filter, so the filters re-rasterised every frame. These
+  leaves only *rotate* a filtered element, and a rotation of an already-rasterised layer is
+  compositor work. Disabling the leaf filters outright measured as noise, so **they were left
+  alone** — there was no sprite atlas worth building here.
+- What did carry over and is worth keeping: the background filter baked into `assets/bg-baked.jpg`,
+  the auroras translating instead of scaling (scaling a 90px blur recomputes it every frame), grain
+  shrunk from a 4x-viewport blend to `-4%`, scanlines and vignette merged into one layer, and the
+  cursor glow's `mix-blend-mode: screen` and `blur()` both removed.
+- **`.photo` needs `will-change: transform`.** Baking the filter out cost it the composited layer
+  the filter had been forcing for free, and a 1400x788 JPEG then got rescaled into the `.bg` stack
+  on every grain shift. Pinning the layer back was the single biggest change measured here.
+- **The grain is the most expensive thing left at high tier** (removing it: 0.844 -> 0.688 CPU per
+  second). It survives at `high` because it is part of the look; `mid` and `low` drop it.
+
+See `../Blissolic Website/CLAUDE.md` for the method notes — especially that fps on this machine is
+too noisy to resolve effects this size, and that renderer CPU time is the instrument that works.
+
+## Adaptive quality (`quality.js`, added 2026-07-29)
+
+Sets `data-q` on `<html>` to `high`, `mid` or `low` and fires `mp:quality` on change. CSS reads it;
+`leaves.js` reads it for how many leaves to spawn (64/38/20 in the gust, 28/12/0 drifting).
+
+- **It measures rather than sniffs.** Static hints (`hardwareConcurrency <= 4`, `deviceMemory <= 4`,
+  `pointer: coarse`) only choose a starting tier; the decision comes from the p50 of ~50 real
+  frames, sampled 2.6s after entry and again at 11s.
+- **It only ever goes down**, and the probe waits out the entrance gust, which is the heaviest two
+  seconds the page ever has.
+- `?q=high|mid|low` pins a tier for testing.
 
 ## Decisions & Rationale
 

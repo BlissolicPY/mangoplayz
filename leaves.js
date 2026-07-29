@@ -16,7 +16,11 @@
 
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-  const COUNT = 64;
+  /* quality.js sets data-q on <html> from measured frame times. Read at spawn
+     time rather than cached, so a downgrade partway through takes effect. */
+  const tier = () => document.documentElement.dataset.q || "high";
+  const COUNT = () => (tier() === "low" ? 20 : tier() === "mid" ? 38 : 64);
+  const fallMax = () => (tier() === "low" ? 0 : tier() === "mid" ? 12 : 28);
 
   // straight off the page's own palette — the reds and golds of the maple in
   // the background photograph, not invented autumn colours
@@ -41,7 +45,7 @@
   function gust() {
     const frag = document.createDocumentFragment();
 
-    for (let i = 0; i < COUNT; i++) {
+    for (let i = 0, n = COUNT(); i < n; i++) {
       const leaf = document.createElement("span");
       leaf.className = "leaf";
       leaf.setAttribute("aria-hidden", "true");
@@ -102,7 +106,9 @@
      the glass as a soft blurred shape. That is the nicest part of it and it is
      free — it only works because the leaves are underneath. */
 
-  const FALL_MAX = 28;        // concurrent leaves; fewer than ~20 reads as a bug
+  /* 28 concurrent at full quality; fewer than ~20 reads as a bug rather than as
+     calm, which is why the mid tier drops to 12 and the low tier to none at all
+     instead of thinning gradually. */
   const FALL_EVERY = 550;     // ms between spawns
   let falling = 0;
   let fallTimer = null;
@@ -114,7 +120,7 @@
   const FALL_TINTS = ["#FDC735", "#FED639", "#FC7614", "#FC6716", "#D57918"];
 
   function dropLeaf(initial) {
-    if (falling >= FALL_MAX) return;
+    if (falling >= fallMax()) return;
     falling++;
 
     const leaf = document.createElement("span");
@@ -165,8 +171,19 @@
     document.body.appendChild(leaf);
   }
 
+  /* a downgrade mid-session culls the surplus rather than waiting for each leaf
+     to finish its fall */
+  window.addEventListener("mp:quality", () => {
+    const max = fallMax();
+    const alive = document.querySelectorAll(".leaf-fall");
+    for (let i = max; i < alive.length; i++) {
+      alive[i].remove();
+      falling--;
+    }
+  });
+
   function startFalling() {
-    for (let i = 0; i < 16; i++) dropLeaf(true);
+    for (let i = 0, n = Math.min(16, fallMax()); i < n; i++) dropLeaf(true);
     fallTimer = setInterval(() => dropLeaf(false), FALL_EVERY);
   }
 

@@ -14,15 +14,25 @@ same JS, same interactions, palette re-derived from a different avatar.
 No build step, no deps, no API keys — open `index.html` or serve the folder.
 
 ## Current State
-**Live and permanent** at **https://blissolicpy.github.io/mangoplayz/** (GitHub Pages, repo
-`BlissolicPY/mangoplayz`, public, `main` branch root). Verified in a real browser: 200, avatar +
-CSS + fonts load over HTTPS, pill reaches `data-state="live"` at 101K (real fetch, not the
-fallback), 5 tiles, no horizontal overflow.
+**Live and permanent** at **https://mangoplayz.xyz/** (GitHub Pages, repo `BlissolicPY/mangoplayz`,
+public, `main` branch root, custom domain via the tracked `CNAME` file). The old Pages URL
+`blissolicpy.github.io/mangoplayz/` still 301s to the apex, so old links keep working — but the
+apex is the canonical home and is what `canonical` / `og:site_name` point at. Verified in a real
+browser: 200, avatar + CSS + fonts load over HTTPS, pill reaches `data-state="live"` at 101K (real
+fetch, not the fallback), 5 tiles, no horizontal overflow.
 
 `x.com/MangoPlayzz` 200. All three channels resolved via InnerTube.
 
 ## Where We Left Off
-2026-07-28 — built and deployed this session. Nothing outstanding.
+2026-07-29 (later) — tile text legibility, ported from the Blissolic site after the same complaint
+there. Handles measured **2.88:1** against the tile substrate on the live page and are now
+**8.11:1**; titles, counts and arrows moved with them. `style.css?v=11`. Tile height is unchanged
+at 66px, so the one-screen layout still holds (`scrollHeight == innerHeight` at 1920x889). See the
+entry under Decisions. Nothing outstanding.
+
+Earlier that day — shortened the link-preview text to `All of MangoPlayz's links in one place.` across
+all three description tags (`index.html:8` SEO, `:19` og, `:23` twitter), commit `ff3424e`, pushed
+to `main` and verified live at the CDN. Nothing outstanding.
 
 ## Key Files
 - `index.html` — the whole page. 5 tiles: the three channels, Discord, X. No email tile (he
@@ -161,6 +171,22 @@ click/tap/keypress anywhere on the page, at 22% volume with a 1.6s fade-in, and 
 
 ## Decisions & Rationale
 
+- **The handle line was measurably unreadable, not merely dim (fixed 2026-07-29).** `.tile__sub`
+  sat on `--text-faint` (0.34 alpha), weight 300, 12.5px. Sampled off a screenshot of the **live**
+  page — glyph core against the tile substrate, mean sRGB 35.3 — that is **2.88:1**, against the
+  4.5:1 WCAG AA floor for small text. Now `--text-soft` 0.72 / weight 400 / 13.3px with +0.012em
+  tracking: **8.11:1** measured the same way.
+  - Over this substrate 0.49 is where alpha crosses 4.5:1. The chosen 0.72 is the same value the
+    Blissolic site landed on and that is worth stating rather than assuming: the backgrounds are a
+    sunset and a night sky, but the tile fill is white-over-dark on both, so the substrates
+    converge (35.3 here, 34.5 there). **Re-measure if the background photo changes.**
+  - Hover goes to full white. It was `--text-dim` (0.58), which against the new base would be a
+    step *down* — hovering would dim the line you're reading.
+  - `--text-faint` is glyph-only now: the count moved to `--text-dim` at weight 600, the arrow to
+    0.46 (4.3:1). The gold hover on the count is untouched.
+  - **This did not cost the one-screen layout.** Tile height is set by the 38.4px icon, not the
+    text block, which grew to ~38px and still fits under it — measured 66px before and after.
+
 - **The Discord invite on the page is NOT the one that was handed over.** `discord.gg/KswrWpA4w`
   works but carries `expires_at: 2026-08-27` — a 30-day link that would dead-end on a permanent
   page. `discord.gg/GxqW9vmbAK`, from the MangoPlayz channel's own bio, points at the **same
@@ -229,6 +255,14 @@ click/tap/keypress anywhere on the page, at 22% volume with a 1.6s fade-in, and 
 - **og:image is absolute (YouTube CDN) and og:url is omitted**, `canonical` points at the Pages
   URL — inherited from the siblings.
 
+- **The description tags describe the page, not the channel.** They were
+  `Subscribe to watch me suffer! All of MangoPlayz's channels and links in one place.` — the first
+  half is NathanMC's channel bio, which already appears on the page under the hero, so the embed
+  repeated it and buried the one thing a preview needs to say. Now just
+  `All of MangoPlayz's links in one place.` **Keep `description`, `og:description` and
+  `twitter:description` identical**; they are one string in three places, and letting the Google
+  snippet drift from the Discord embed is how they end up contradicting each other.
+
 ## Gotchas
 - **PowerShell 5.1 `Get-Content -Raw` reads UTF-8 as ANSI.** Round-tripping this file's CSS
   through `Get-Content -Raw` + `[IO.File]::WriteAllText(..., UTF8)` turned every em dash into
@@ -237,3 +271,10 @@ click/tap/keypress anywhere on the page, at 22% volume with a 1.6s fade-in, and 
   `browse`, as in the sibling projects.
 - **`gh api -X POST ... --input -` fails from PowerShell 5.1** ("Problems parsing JSON"); write the
   body to a file and pass `--input <file>`.
+- **Editing a meta tag is not the same as the preview changing, and there are two caches.**
+  GitHub Pages' CDN took ~45s to serve the new tag after the push — poll it as the crawler,
+  `curl -A "Discordbot/2.0" "https://mangoplayz.xyz/?cb=$RANDOM"`, because a plain browser fetch
+  can be served from a different edge. Then **Discord's own OG cache still holds the old embed for
+  about a day**, keyed by exact URL — posting `https://mangoplayz.xyz/?1` is a different key, so it
+  scrapes fresh and shows the new preview immediately. Neither cache is a bug in the page; do not
+  go looking for one in `index.html`.

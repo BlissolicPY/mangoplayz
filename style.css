@@ -44,6 +44,15 @@
   --text:       var(--white);
   --text-dim:   rgba(253, 254, 249, 0.58);
   --text-faint: rgba(253, 254, 249, 0.34);
+  /* The handle line (@NathanMCShorts, Mango's Fruit Bowl…) sat on --text-faint
+     and measured 2.88:1 against the tile substrate — sampled off a screenshot
+     of the live page, substrate mean sRGB 35.3 — under the 4.5:1 small-text
+     minimum. Over this substrate 0.49 is where it crosses 4.5; 0.72 gives
+     8.29:1. Same value the Blissolic site landed on, and that is a coincidence
+     worth stating: the two backgrounds are a sunset and a night sky, but the
+     tile fill is white-over-dark in both, so they converge. Re-measure if the
+     background photo changes. --text-faint is now glyph-only. */
+  --text-soft:  rgba(253, 254, 249, 0.72);
 
   /* 0.05 / 0.10 rather than the 0.035 / 0.08 the first two sites use: warm
      backgrounds read closer than their luminance says, so tiles need the lift
@@ -596,22 +605,28 @@ body {
 }
 
 .tile__title {
-  font-size: 0.98rem;
-  font-weight: 500;
-  letter-spacing: -0.012em;
+  font-size: 1.02rem;
+  font-weight: 600;
+  letter-spacing: -0.008em;
 }
 
+/* Three things were working against this line at once — 0.34 alpha, weight 300
+   and 12.5px — so all three moved. Weight 300 is spindly in Outfit at this
+   size, and small type wants a little positive tracking while the 16px title
+   above still tracks negative. */
 .tile__sub {
-  font-size: 0.78rem;
-  font-weight: 300;
-  color: var(--text-faint);
+  font-size: 0.83rem;
+  font-weight: 400;
+  letter-spacing: 0.012em;
+  color: var(--text-soft);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   transition: color 0.45s var(--ease);
 }
 
-.tile:hover .tile__sub { color: var(--text-dim); }
+/* full white on hover — --text-dim would now be a step DOWN from the base */
+.tile:hover .tile__sub { color: var(--text); }
 
 /* marks the main channel — three YouTube tiles otherwise look interchangeable */
 .tile__badge {
@@ -640,11 +655,11 @@ body {
 .tile__count {
   flex: none;
   margin-right: 0.15rem;
-  font-size: 0.8rem;
-  font-weight: 500;
+  font-size: 0.82rem;
+  font-weight: 600;
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
-  color: var(--text-faint);
+  color: var(--text-dim);
   transition: color 0.45s var(--ease), opacity 0.4s var(--ease);
 }
 
@@ -668,7 +683,9 @@ body {
   flex: none;
   display: grid;
   place-items: center;
-  color: var(--text-faint);
+  /* lifted with the text: at 0.34 it read as a smudge beside a brighter handle,
+     and it's an affordance rather than decoration (4.3:1) */
+  color: rgba(253, 254, 249, 0.46);
   transition: color 0.45s var(--ease), transform 0.45s var(--ease);
 }
 
@@ -1305,7 +1322,10 @@ html.gated body { overflow: hidden; }
 @media (max-width: 26rem) {
   .avatar { width: 7.25rem; height: 7.25rem; }
   .tile { padding: 0.85rem 0.95rem; gap: 0.8rem; }
-  .tile__sub { font-size: 0.74rem; }
+  /* 0.74rem was 11.8px — under the ~12px floor where small type stops being
+     comfortable. Still shrinks, just not that far */
+  .tile__title { font-size: 0.98rem; }
+  .tile__sub { font-size: 0.8rem; }
   .tile__badge { font-size: 0.55rem; padding: 0.18rem 0.4rem; letter-spacing: 0.1em; }
 }
 
